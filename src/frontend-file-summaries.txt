@@ -1,0 +1,18 @@
+{
+  "frontend/src/index.css": "Global styles with emerald/teal OKLCH color system for professional work management theme, supporting both light and dark modes with warm, trustworthy colors.",
+  "frontend/tailwind.config.js": "Tailwind configuration extending theme with emerald/teal color palette, Inter font family, custom border radius, soft shadows, and fade-in animations.",
+  "frontend/src/App.tsx": "Main application component with routing logic that checks for superadmin existence, shows claim page if none exists, handles registration flow, and routes to appropriate views based on user status with Toaster component and proper TypeScript null checks.",
+  "frontend/src/components/LandingPage.tsx": "Landing page with hero section, feature cards highlighting multi-role system, secure access, and approval workflow, plus login button and footer with attribution.",
+  "frontend/src/components/LoginButton.tsx": "Reusable login/logout button component with Internet Identity integration, supporting default and hero variants with loading states.",
+  "frontend/src/components/RegistrationFlow.tsx": "Registration form for new users to enter name and select requested role from 8 available options, with success state showing submission confirmation.",
+  "frontend/src/components/PendingApprovalView.tsx": "View displayed to users awaiting admin approval, showing registration details and pending status message.",
+  "frontend/src/components/ApprovedUserView.tsx": "Router component that displays admin dashboard for admins, pending approval view for unapproved users, or approved user placeholder view with link to user profile page.",
+  "frontend/src/components/ApprovalStatusBanner.tsx": "Banner component displaying user approval status (approved or pending) at the top of authenticated views.",
+  "frontend/src/components/AdminDashboard.tsx": "Admin dashboard displaying pending registration requests with user details (name, role, timestamp), approve/reject actions, legacy approvals section, and all users table with toast notifications.",
+  "frontend/src/hooks/useQueries.ts": "React Query hooks for fetching user profile, user role, approval status, current user data, and pending registration requests from backend with proper actor dependency handling.",
+  "frontend/src/hooks/useRegistration.ts": "Custom hook managing user self-registration by calling the appropriate backend function (selfRegisterClient, selfRegisterPartner, or selfRegisterInternal) based on the selected role, with cache invalidation for user queries.",
+  "frontend/src/hooks/useApprovalManagement.ts": "Custom hooks for admin approval management including listing approvals, approving/rejecting users via new backend functions, and legacy approval system mutations with cache invalidation.",
+  "frontend/src/components/UserInfoPage.tsx": "User information page displaying authenticated user's name, role (from 8-role enum), status (Pending/Active), creation timestamp, and principal ID with clean card layout and emerald/teal theme styling.",
+  "frontend/src/hooks/useSuperadminClaim.ts": "Custom hooks for checking if a superadmin exists and claiming superadmin access, with React Query integration and cache invalidation.",
+  "frontend/src/components/SuperadminClaimPage.tsx": "Full-page component for first-time superadmin claim with explanation, claim button, success/error feedback, and automatic redirect to dashboard after successful claim."
+}

@@ -1,0 +1,60 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-21T23:38:38.340Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 4,
+    "implemented": 0,
+    "items": [
+      {
+        "id": "REQ-1",
+        "summary": "Remove AccessControl authorization check from getCallerUserProfile function in backend/main.mo so any caller can query their own profile without restrictions",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Add selfRegisterClient public function in backend/main.mo that allows anonymous users to self-register as client role with pending status, accepting name as Text parameter, and trapping if caller is already registered",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Add selfRegisterPartner public function in backend/main.mo that allows anonymous users to self-register as partner role with pending status, accepting name as Text parameter, and trapping if caller is already registered",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Add selfRegisterInternal public function in backend/main.mo that allows anonymous users to self-register as internal staff (admin, finance, concierge, asistenmu, strategicPartner) with pending status, accepting name and inputRole as Text parameters, validating inputRole against allowed values, and trapping if caller is already registered or role is invalid",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      }
+    ]
+  },
+  "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "build-request.json",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useRegistration.ts",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "User management system with self-registration functionality for clients, partners, and internal staff (admin, finance, concierge, asistenmu, strategicPartner). Users register with pending status awaiting approval.",
+  "architectural_notes": [
+    "Self-registration system allows anonymous users to register with pending status",
+    "getCallerUserProfile is publicly accessible without authorization checks",
+    "All self-registration functions prevent duplicate registrations",
+    "Internal staff roles: admin, finance, concierge, asistenmu, strategicPartner"
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Unlock getCallerUserProfile function by removing AccessControl checks",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Add selfRegisterClient function for client self-registration with pending status",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Add selfRegisterPartner function for partner self-registration with pending status",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Add selfRegisterInternal function for internal staff self-registration (admin, finance, concierge, asistenmu, strategicPartner) with pending status",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Remove AccessControl authorization check from getCallerUserProfile function in backend/main.mo so any caller can query their own profile without restrictions",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Add selfRegisterClient public function in backend/main.mo that allows anonymous users to self-register as client role with pending status, accepting name as Text parameter, and trapping if caller is already registered",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Add selfRegisterPartner public function in backend/main.mo that allows anonymous users to self-register as partner role with pending status, accepting name as Text parameter, and trapping if caller is already registered",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Add selfRegisterInternal public function in backend/main.mo that allows anonymous users to self-register as internal staff (admin, finance, concierge, asistenmu, strategicPartner) with pending status, accepting name and inputRole as Text parameters, validating inputRole against allowed values, and trapping if caller is already registered or role is invalid",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Unlock profile check and add self-registration functions",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

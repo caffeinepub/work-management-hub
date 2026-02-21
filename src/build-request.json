@@ -1,0 +1,106 @@
+{
+  "kind": "build_request",
+  "title": "Unlock profile check and add self-registration functions",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Remove AccessControl authorization check from getCallerUserProfile function in backend/main.mo so any caller can query their own profile without restrictions",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "BUKA KUNCI FUNGSI CEK PROFIL: Ganti fungsi `getCallerUserProfile` menjadi seperti ini (Hapus pengecekan AccessControl-nya)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "getCallerUserProfile function executes without calling AccessControl.requireAnyRole",
+        "Function returns null if caller is not registered, or returns UserProfile with name and null requestedRole if registered",
+        "Any authenticated principal can successfully call this function"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Add selfRegisterClient public function in backend/main.mo that allows anonymous users to self-register as client role with pending status, accepting name as Text parameter, and trapping if caller is already registered",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "public shared ({ caller }) func selfRegisterClient(name : Text) : async () { if (users.containsKey(caller)) { Runtime.trap(\"Anda sudah terdaftar di sistem!\"); }; let user : User = { principalId = caller; name = name; role = #client; status = #pending; createdAt = Time.now(); }; users.add(caller, user); };"
+        ]
+      },
+      "acceptanceCriteria": [
+        "selfRegisterClient function is public and shared with caller context",
+        "Function accepts name parameter of type Text",
+        "Function traps with message 'Anda sudah terdaftar di sistem!' if caller already exists in users",
+        "Function creates User record with role = #client, status = #pending, and current timestamp",
+        "Function adds new user to users HashMap",
+        "No authorization checks are performed at function entry"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Add selfRegisterPartner public function in backend/main.mo that allows anonymous users to self-register as partner role with pending status, accepting name as Text parameter, and trapping if caller is already registered",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "public shared ({ caller }) func selfRegisterPartner(name : Text) : async () { if (users.containsKey(caller)) { Runtime.trap(\"Anda sudah terdaftar di sistem!\"); }; let user : User = { principalId = caller; name = name; role = #partner; status = #pending; createdAt = Time.now(); }; users.add(caller, user); };"
+        ]
+      },
+      "acceptanceCriteria": [
+        "selfRegisterPartner function is public and shared with caller context",
+        "Function accepts name parameter of type Text",
+        "Function traps with message 'Anda sudah terdaftar di sistem!' if caller already exists in users",
+        "Function creates User record with role = #partner, status = #pending, and current timestamp",
+        "Function adds new user to users HashMap",
+        "No authorization checks are performed at function entry"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Add selfRegisterInternal public function in backend/main.mo that allows anonymous users to self-register as internal staff (admin, finance, concierge, asistenmu, strategicPartner) with pending status, accepting name and inputRole as Text parameters, validating inputRole against allowed values, and trapping if caller is already registered or role is invalid",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "public shared ({ caller }) func selfRegisterInternal(name : Text, inputRole : Text) : async () { if (users.containsKey(caller)) { Runtime.trap(\"Anda sudah terdaftar di sistem!\"); }; let newRole : Role = switch (inputRole) { case (\"admin\") { #admin }; case (\"finance\") { #finance }; case (\"concierge\") { #concierge }; case (\"asistenmu\") { #asistenmu }; case (\"strategicPartner\") { #strategicPartner }; case (_) { Runtime.trap(\"Role internal tidak valid!\"); }; }; let user : User = { principalId = caller; name = name; role = newRole; status = #pending; createdAt = Time.now(); }; users.add(caller, user); };"
+        ]
+      },
+      "acceptanceCriteria": [
+        "selfRegisterInternal function is public and shared with caller context",
+        "Function accepts name and inputRole parameters of type Text",
+        "Function traps with message 'Anda sudah terdaftar di sistem!' if caller already exists in users",
+        "Function validates inputRole against 'admin', 'finance', 'concierge', 'asistenmu', 'strategicPartner' and traps with 'Role internal tidak valid!' for invalid values",
+        "Function creates User record with mapped role, status = #pending, and current timestamp",
+        "Function adds new user to users HashMap",
+        "No authorization checks are performed at function entry"
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify the existing User type definition or users HashMap structure",
+    "Do not add authorization checks to the three new self-registration functions",
+    "Preserve all existing backend functions and their authorization logic",
+    "Use exact Indonesian error messages as specified in the requirements"
+  ],
+  "nonGoals": [
+    "Creating frontend UI for the self-registration flows",
+    "Modifying the existing registerInternalStaff function",
+    "Changing the approval workflow logic",
+    "Adding email or notification features",
+    "Implementing rate limiting or spam prevention"
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}
