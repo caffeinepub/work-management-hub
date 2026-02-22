@@ -2,14 +2,29 @@ import { useInternetIdentity } from './hooks/useInternetIdentity';
 import { useGetCallerUserProfile, useCurrentUser } from './hooks/useQueries';
 import { useHasSuperadmin } from './hooks/useSuperadminClaim';
 import LandingPage from './components/LandingPage';
-import RegistrationFlow from './components/RegistrationFlow';
+import PartnerPortalPage from './components/PartnerPortalPage';
+import ClientRegisterPage from './components/ClientRegisterPage';
+import InternalSystemPage from './components/InternalSystemPage';
+import PartnerDashboard from './components/PartnerDashboard';
+import ClientDashboard from './components/ClientDashboard';
+import InternalDashboard from './components/InternalDashboard';
 import ApprovedUserView from './components/ApprovedUserView';
 import SuperadminClaimPage from './components/SuperadminClaimPage';
 import UserInfoPage from './components/UserInfoPage';
 import { Loader2 } from 'lucide-react';
-import { RouterProvider, createRouter, createRoute, createRootRoute } from '@tanstack/react-router';
+import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
 import { Toaster } from '@/components/ui/sonner';
-import { Status } from './backend';
+import { Status, Role } from './backend';
+
+// Layout component for routes that need router context
+function Layout() {
+  return (
+    <>
+      <Outlet />
+      <Toaster />
+    </>
+  );
+}
 
 // Main app component that handles authentication and routing logic
 function AppContent() {
@@ -54,7 +69,6 @@ function AppContent() {
     return (
       <SuperadminClaimPage
         onClaimSuccess={() => {
-          // Force reload to refresh all queries
           window.location.reload();
         }}
       />
@@ -75,28 +89,60 @@ function AppContent() {
 
   // Check if user has registered (has a User record)
   if (currentUser === null) {
-    // No user record - show registration flow
-    return <RegistrationFlow />;
+    return <LandingPage />;
   }
 
   // User exists but is pending approval
   if (currentUser && currentUser.status === Status.pending) {
-    // Show pending approval view (will be handled by ApprovedUserView)
     return <ApprovedUserView />;
   }
 
-  // User is active - show appropriate view
+  // User is active - route to appropriate dashboard based on role
+  if (currentUser && currentUser.status === Status.active) {
+    if (currentUser.role === Role.partner) {
+      return <PartnerDashboard />;
+    } else if (currentUser.role === Role.client) {
+      return <ClientDashboard />;
+    } else {
+      // Internal roles: admin, finance, concierge, asistenmu, strategicPartner, superadmin
+      return <InternalDashboard />;
+    }
+  }
+
   return <ApprovedUserView />;
 }
 
-// Create root route
+// Create root route with Layout
 const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <AppContent />
-      <Toaster />
-    </>
-  ),
+  component: Layout,
+});
+
+// Create index route
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: AppContent,
+});
+
+// Create partner portal route
+const partnerPortalRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/partner-portal',
+  component: PartnerPortalPage,
+});
+
+// Create client register route
+const clientRegisterRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/clientregister',
+  component: ClientRegisterPage,
+});
+
+// Create internal system route
+const internalRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/internal',
+  component: InternalSystemPage,
 });
 
 // Create user-info route
@@ -106,8 +152,39 @@ const userInfoRoute = createRoute({
   component: UserInfoPage,
 });
 
+// Create partner dashboard route
+const partnerDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/partner',
+  component: PartnerDashboard,
+});
+
+// Create client dashboard route
+const clientDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/client',
+  component: ClientDashboard,
+});
+
+// Create internal dashboard route
+const internalDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/internal-dashboard',
+  component: InternalDashboard,
+});
+
 // Create router
-const routeTree = rootRoute.addChildren([userInfoRoute]);
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  partnerPortalRoute,
+  clientRegisterRoute,
+  internalRoute,
+  userInfoRoute,
+  partnerDashboardRoute,
+  clientDashboardRoute,
+  internalDashboardRoute,
+]);
+
 const router = createRouter({ routeTree });
 
 export default function App() {

@@ -1,103 +1,158 @@
 {
   "kind": "build_request",
-  "title": "Unlock profile check and add self-registration functions",
-  "priority": "high",
+  "title": "Add pending users approval feature to InternalDashboard",
+  "projectName": "Work Management Hub",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Remove AccessControl authorization check from getCallerUserProfile function in backend/main.mo so any caller can query their own profile without restrictions",
-      "target": "backend",
+      "text": "Add state management to InternalDashboard.tsx for pending users with pendingUsers state array and isLoadingPending boolean state",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-user-build-request"
         ],
         "quotes": [
-          "BUKA KUNCI FUNGSI CEK PROFIL: Ganti fungsi `getCallerUserProfile` menjadi seperti ini (Hapus pengecekan AccessControl-nya)"
+          "const [pendingUsers, setPendingUsers] = useState<any[]>([]);",
+          "const [isLoadingPending, setIsLoadingPending] = useState(false);"
         ]
       },
       "acceptanceCriteria": [
-        "getCallerUserProfile function executes without calling AccessControl.requireAnyRole",
-        "Function returns null if caller is not registered, or returns UserProfile with name and null requestedRole if registered",
-        "Any authenticated principal can successfully call this function"
+        "pendingUsers state is initialized as empty array",
+        "isLoadingPending state is initialized as false"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add selfRegisterClient public function in backend/main.mo that allows anonymous users to self-register as client role with pending status, accepting name as Text parameter, and trapping if caller is already registered",
-      "target": "backend",
+      "text": "Implement fetchPendingUsers function in InternalDashboard.tsx that calls backendActor.getPendingRequests() and updates pendingUsers state with loading state management",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-user-build-request"
         ],
         "quotes": [
-          "public shared ({ caller }) func selfRegisterClient(name : Text) : async () { if (users.containsKey(caller)) { Runtime.trap(\"Anda sudah terdaftar di sistem!\"); }; let user : User = { principalId = caller; name = name; role = #client; status = #pending; createdAt = Time.now(); }; users.add(caller, user); };"
+          "const fetchPendingUsers = async () => { if (!backendActor) return; setIsLoadingPending(true); try { const users = await backendActor.getPendingRequests(); setPendingUsers(users); } catch (error) { console.error(\"Gagal mengambil data pending:\", error); } finally { setIsLoadingPending(false); } };"
         ]
       },
       "acceptanceCriteria": [
-        "selfRegisterClient function is public and shared with caller context",
-        "Function accepts name parameter of type Text",
-        "Function traps with message 'Anda sudah terdaftar di sistem!' if caller already exists in users",
-        "Function creates User record with role = #client, status = #pending, and current timestamp",
-        "Function adds new user to users HashMap",
-        "No authorization checks are performed at function entry"
+        "Function checks for backendActor availability before executing",
+        "Sets isLoadingPending to true before API call",
+        "Calls backendActor.getPendingRequests() and stores result in pendingUsers state",
+        "Handles errors with console.error logging",
+        "Sets isLoadingPending to false in finally block"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add selfRegisterPartner public function in backend/main.mo that allows anonymous users to self-register as partner role with pending status, accepting name as Text parameter, and trapping if caller is already registered",
-      "target": "backend",
+      "text": "Add useEffect hook in InternalDashboard.tsx that calls fetchPendingUsers when currentUser role is 'superadmin' or 'admin'",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-user-build-request"
         ],
         "quotes": [
-          "public shared ({ caller }) func selfRegisterPartner(name : Text) : async () { if (users.containsKey(caller)) { Runtime.trap(\"Anda sudah terdaftar di sistem!\"); }; let user : User = { principalId = caller; name = name; role = #partner; status = #pending; createdAt = Time.now(); }; users.add(caller, user); };"
+          "useEffect(() => { if (currentUser && (currentUser.role === 'superadmin' || currentUser.role === 'admin')) { fetchPendingUsers(); } }, [currentUser, backendActor]);"
         ]
       },
       "acceptanceCriteria": [
-        "selfRegisterPartner function is public and shared with caller context",
-        "Function accepts name parameter of type Text",
-        "Function traps with message 'Anda sudah terdaftar di sistem!' if caller already exists in users",
-        "Function creates User record with role = #partner, status = #pending, and current timestamp",
-        "Function adds new user to users HashMap",
-        "No authorization checks are performed at function entry"
+        "useEffect triggers when currentUser or backendActor changes",
+        "fetchPendingUsers is called only when currentUser role is 'superadmin' or 'admin'",
+        "No fetch occurs for other user roles"
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Add selfRegisterInternal public function in backend/main.mo that allows anonymous users to self-register as internal staff (admin, finance, concierge, asistenmu, strategicPartner) with pending status, accepting name and inputRole as Text parameters, validating inputRole against allowed values, and trapping if caller is already registered or role is invalid",
-      "target": "backend",
+      "text": "Implement handleApprove function in InternalDashboard.tsx that calls backendActor.approveUser with principalId parameter and refreshes pending users list",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-user-build-request"
         ],
         "quotes": [
-          "public shared ({ caller }) func selfRegisterInternal(name : Text, inputRole : Text) : async () { if (users.containsKey(caller)) { Runtime.trap(\"Anda sudah terdaftar di sistem!\"); }; let newRole : Role = switch (inputRole) { case (\"admin\") { #admin }; case (\"finance\") { #finance }; case (\"concierge\") { #concierge }; case (\"asistenmu\") { #asistenmu }; case (\"strategicPartner\") { #strategicPartner }; case (_) { Runtime.trap(\"Role internal tidak valid!\"); }; }; let user : User = { principalId = caller; name = name; role = newRole; status = #pending; createdAt = Time.now(); }; users.add(caller, user); };"
+          "const handleApprove = async (principalId: any) => { try { await backendActor.approveUser(principalId); fetchPendingUsers(); } catch (error) { console.error(\"Gagal approve:\", error); } };"
         ]
       },
       "acceptanceCriteria": [
-        "selfRegisterInternal function is public and shared with caller context",
-        "Function accepts name and inputRole parameters of type Text",
-        "Function traps with message 'Anda sudah terdaftar di sistem!' if caller already exists in users",
-        "Function validates inputRole against 'admin', 'finance', 'concierge', 'asistenmu', 'strategicPartner' and traps with 'Role internal tidak valid!' for invalid values",
-        "Function creates User record with mapped role, status = #pending, and current timestamp",
-        "Function adds new user to users HashMap",
-        "No authorization checks are performed at function entry"
+        "Function accepts principalId parameter",
+        "Calls backendActor.approveUser with principalId",
+        "Calls fetchPendingUsers after successful approval to refresh list",
+        "Handles errors with console.error logging"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Implement handleReject function in InternalDashboard.tsx that prompts for confirmation, calls backendActor.rejectUser with principalId parameter, and refreshes pending users list",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-build-request"
+        ],
+        "quotes": [
+          "const handleReject = async (principalId: any) => { try { if(window.confirm(\"Yakin ingin menolak dan menghapus user ini?\")) { await backendActor.rejectUser(principalId); fetchPendingUsers(); } } catch (error) { console.error(\"Gagal reject:\", error); } };"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Function accepts principalId parameter",
+        "Shows confirmation dialog with text 'Yakin ingin menolak dan menghapus user ini?'",
+        "Only proceeds with rejection if user confirms",
+        "Calls backendActor.rejectUser with principalId after confirmation",
+        "Calls fetchPendingUsers after successful rejection to refresh list",
+        "Handles errors with console.error logging"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Replace the Admin Panel card placeholder content in InternalDashboard.tsx with a table or list displaying pending users showing name, requested role, and action buttons for approve (green/primary) and reject (red/destructive)",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-build-request"
+        ],
+        "quotes": [
+          "Ganti isi dari Card 'Admin Panel' (yang sebelumnya berisi teks 'Fitur admin akan segera tersedia') menjadi sebuah Tabel atau List sederhana yang me-map `pendingUsers`",
+          "Tampilkan informasi: Nama, Role yang diajukan, Tombol Action: 'Approve' (Warna Hijau/Primary) dan 'Reject' (Warna Merah/Destructive)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Admin Panel card content is replaced with pending users display",
+        "Table or list maps through pendingUsers array",
+        "Each row displays user name and requested role",
+        "Each row has Approve button styled in green/primary color",
+        "Each row has Reject button styled in red/destructive color",
+        "Approve button calls handleApprove with user principalId",
+        "Reject button calls handleReject with user principalId"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Display message 'Tidak ada permintaan pendaftaran baru' in the Admin Panel when pendingUsers array is empty",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-build-request"
+        ],
+        "quotes": [
+          "Jika pendingUsers.length === 0, tampilkan teks 'Tidak ada permintaan pendaftaran baru.'"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Empty state message is shown when pendingUsers.length equals 0",
+        "Message text is exactly 'Tidak ada permintaan pendaftaran baru'",
+        "Message is displayed in the Admin Panel card area"
       ]
     }
   ],
   "constraints": [
-    "Do not modify the existing User type definition or users HashMap structure",
-    "Do not add authorization checks to the three new self-registration functions",
-    "Preserve all existing backend functions and their authorization logic",
-    "Use exact Indonesian error messages as specified in the requirements"
+    "Only modify InternalDashboard.tsx file",
+    "Use existing backendActor from useActor hook",
+    "Admin Panel feature must only be visible to users with role 'superadmin' or 'admin'",
+    "Must use existing shadcn/ui components for table and buttons"
   ],
   "nonGoals": [
-    "Creating frontend UI for the self-registration flows",
-    "Modifying the existing registerInternalStaff function",
-    "Changing the approval workflow logic",
-    "Adding email or notification features",
-    "Implementing rate limiting or spam prevention"
+    "Modifying backend API endpoints",
+    "Changing user authentication flow",
+    "Adding new user roles",
+    "Modifying other dashboard components"
   ],
   "imageRequirements": {
     "required": [],

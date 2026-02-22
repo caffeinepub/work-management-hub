@@ -98,7 +98,10 @@ export interface User {
     name: string;
     createdAt: bigint;
     role: Role;
+    idUser: string;
+    companyBisnis?: string;
     principalId: Principal;
+    kotaDomisili?: string;
 }
 export interface UserProfile {
     name: string;
@@ -145,9 +148,9 @@ export interface backendInterface {
     rejectUser(principalId: Principal): Promise<void>;
     requestApproval(): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    selfRegisterClient(name: string): Promise<void>;
+    selfRegisterClient(name: string, company: string): Promise<void>;
     selfRegisterInternal(name: string, inputRole: string): Promise<void>;
-    selfRegisterPartner(name: string): Promise<void>;
+    selfRegisterPartner(name: string, kota: string): Promise<void>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
 }
 import type { ApprovalStatus as _ApprovalStatus, Role as _Role, Status as _Status, User as _User, UserApprovalInfo as _UserApprovalInfo, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
@@ -377,17 +380,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async selfRegisterClient(arg0: string): Promise<void> {
+    async selfRegisterClient(arg0: string, arg1: string): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.selfRegisterClient(arg0);
+                const result = await this.actor.selfRegisterClient(arg0, arg1);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.selfRegisterClient(arg0);
+            const result = await this.actor.selfRegisterClient(arg0, arg1);
             return result;
         }
     }
@@ -405,17 +408,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async selfRegisterPartner(arg0: string): Promise<void> {
+    async selfRegisterPartner(arg0: string, arg1: string): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.selfRegisterPartner(arg0);
+                const result = await this.actor.selfRegisterPartner(arg0, arg1);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.selfRegisterPartner(arg0);
+            const result = await this.actor.selfRegisterPartner(arg0, arg1);
             return result;
         }
     }
@@ -469,20 +472,29 @@ function from_candid_record_n11(_uploadFile: (file: ExternalBlob) => Promise<Uin
     name: string;
     createdAt: bigint;
     role: _Role;
+    idUser: string;
+    companyBisnis: [] | [string];
     principalId: Principal;
+    kotaDomisili: [] | [string];
 }): {
     status: Status;
     name: string;
     createdAt: bigint;
     role: Role;
+    idUser: string;
+    companyBisnis?: string;
     principalId: Principal;
+    kotaDomisili?: string;
 } {
     return {
         status: from_candid_Status_n12(_uploadFile, _downloadFile, value.status),
         name: value.name,
         createdAt: value.createdAt,
         role: from_candid_Role_n14(_uploadFile, _downloadFile, value.role),
-        principalId: value.principalId
+        idUser: value.idUser,
+        companyBisnis: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.companyBisnis)),
+        principalId: value.principalId,
+        kotaDomisili: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.kotaDomisili))
     };
 }
 function from_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {

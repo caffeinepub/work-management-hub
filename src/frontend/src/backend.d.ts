@@ -16,7 +16,10 @@ export interface User {
     name: string;
     createdAt: bigint;
     role: Role;
+    idUser: string;
+    companyBisnis?: string;
     principalId: Principal;
+    kotaDomisili?: string;
 }
 export interface UserProfile {
     name: string;
@@ -62,8 +65,8 @@ export interface backendInterface {
     rejectUser(principalId: Principal): Promise<void>;
     requestApproval(): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    selfRegisterClient(name: string): Promise<void>;
+    selfRegisterClient(name: string, company: string): Promise<void>;
     selfRegisterInternal(name: string, inputRole: string): Promise<void>;
-    selfRegisterPartner(name: string): Promise<void>;
+    selfRegisterPartner(name: string, kota: string): Promise<void>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
 }

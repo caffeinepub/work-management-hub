@@ -1,75 +1,81 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "User management system with self-registration functionality for clients, partners, and internal staff (admin, finance, concierge, asistenmu, strategicPartner). Users register with pending status awaiting approval.",
+  "summary": "Internal dashboard system with user registration approval workflow for admin and superadmin roles",
   "architectural_notes": [
-    "Self-registration system allows anonymous users to register with pending status",
-    "getCallerUserProfile is publicly accessible without authorization checks",
-    "All self-registration functions prevent duplicate registrations",
-    "Internal staff roles: admin, finance, concierge, asistenmu, strategicPartner"
+    "Backend actor provides getPendingRequests(), approveUser(), and rejectUser() methods",
+    "InternalDashboard.tsx uses role-based access control for admin panel features",
+    "Approval workflow: fetch pending users → display in table → approve/reject actions → refresh data"
   ],
   "known_issues": [],
   "isFixRequest": false,
-  "existing_features": [],
-  "new_feature_requests": [
+  "existing_features": [
     {
-      "id": "AR-1",
-      "summary": "Unlock getCallerUserProfile function by removing AccessControl checks",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Add selfRegisterClient function for client self-registration with pending status",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Add selfRegisterPartner function for partner self-registration with pending status",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Add selfRegisterInternal function for internal staff self-registration (admin, finance, concierge, asistenmu, strategicPartner) with pending status",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Remove AccessControl authorization check from getCallerUserProfile function in backend/main.mo so any caller can query their own profile without restrictions",
+      "id": "feature-add-state-management-to-internaldashboard-tsx-for-pending-users-with-pendingusers-state-array-and-isloadingpending-boolean-state",
+      "title": "Add state management to InternalDashboard.tsx for pending users with pendingUsers state array and isLoadingPending boolean state",
       "reqIds": [
         "REQ-1"
       ],
-      "status": "pending"
+      "version": 1
     },
     {
-      "id": "AR-6",
-      "summary": "Add selfRegisterClient public function in backend/main.mo that allows anonymous users to self-register as client role with pending status, accepting name as Text parameter, and trapping if caller is already registered",
+      "id": "feature-implement-fetchpendingusers-function-in-internaldashboard-tsx-that-calls-backendactor-getpendingrequests-and-updates-pendingusers-state-with-loading-state-management",
+      "title": "Implement fetchPendingUsers function in InternalDashboard.tsx that calls backendActor.getPendingRequests() and updates pendingUsers state with loading state management",
       "reqIds": [
         "REQ-2"
       ],
-      "status": "pending"
+      "version": 1
     },
     {
-      "id": "AR-7",
-      "summary": "Add selfRegisterPartner public function in backend/main.mo that allows anonymous users to self-register as partner role with pending status, accepting name as Text parameter, and trapping if caller is already registered",
+      "id": "feature-add-useeffect-hook-in-internaldashboard-tsx-that-calls-fetchpendingusers-when-currentuser-role-is-superadmin-or-admin",
+      "title": "Add useEffect hook in InternalDashboard.tsx that calls fetchPendingUsers when currentUser role is 'superadmin' or 'admin'",
       "reqIds": [
         "REQ-3"
       ],
-      "status": "pending"
+      "version": 1
     },
     {
-      "id": "AR-8",
-      "summary": "Add selfRegisterInternal public function in backend/main.mo that allows anonymous users to self-register as internal staff (admin, finance, concierge, asistenmu, strategicPartner) with pending status, accepting name and inputRole as Text parameters, validating inputRole against allowed values, and trapping if caller is already registered or role is invalid",
+      "id": "feature-implement-handleapprove-function-in-internaldashboard-tsx-that-calls-backendactor-approveuser-with-principalid-parameter-and-refreshes-pending-users-list",
+      "title": "Implement handleApprove function in InternalDashboard.tsx that calls backendActor.approveUser with principalId parameter and refreshes pending users list",
       "reqIds": [
         "REQ-4"
       ],
-      "status": "pending"
+      "version": 1
+    },
+    {
+      "id": "feature-implement-handlereject-function-in-internaldashboard-tsx-that-prompts-for-confirmation-calls-backendactor-rejectuser-with-principalid-parameter-and-refreshes-pending-users-list",
+      "title": "Implement handleReject function in InternalDashboard.tsx that prompts for confirmation, calls backendActor.rejectUser with principalId parameter, and refreshes pending users list",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-admin-panel-card-placeholder-content-in-internaldashboard-tsx-with-a-table-or-list-displaying-pending-users-showing-name-requested-role-and-action-buttons-for-approve-green-primary-and-reject-red-destructive",
+      "title": "Replace the Admin Panel card placeholder content in InternalDashboard.tsx with a table or list displaying pending users showing name, requested role, and action buttons for approve (green/primary) and reject (red/destructive)",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-display-message-tidak-ada-permintaan-pendaftaran-baru-in-the-admin-panel-when-pendingusers-array-is-empty",
+      "title": "Display message 'Tidak ada permintaan pendaftaran baru' in the Admin Panel when pendingUsers array is empty",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
     }
   ],
-  "projectName": "Unlock profile check and add self-registration functions",
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Add pending users approval feature to InternalDashboard for admin/superadmin",
+      "reqIds": [],
+      "status": "in_progress"
+    }
+  ],
+  "projectName": "Work Management Hub",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

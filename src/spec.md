@@ -1,12 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Enable self-registration for users and unlock profile checking without authorization restrictions.
+**Goal:** Add pending user approval feature to the Internal Dashboard for admins and superadmins.
 
 **Planned changes:**
-- Remove AccessControl authorization check from getCallerUserProfile function so any authenticated user can query their own profile
-- Add selfRegisterClient function allowing anonymous users to register as client with pending status
-- Add selfRegisterPartner function allowing anonymous users to register as partner with pending status
-- Add selfRegisterInternal function allowing anonymous users to register as internal staff (admin, finance, concierge, asistenmu, strategicPartner) with pending status and role validation
+- Add state management for pending users list and loading state
+- Implement function to fetch pending user registration requests
+- Add approval handler that approves user and refreshes list
+- Add rejection handler with confirmation dialog that removes user and refreshes list
+- Replace Admin Panel card placeholder with table/list showing pending users with their name, requested role, and action buttons
+- Display empty state message when no pending requests exist
+- Only fetch and display pending users for admin and superadmin roles
 
-**User-visible outcome:** Users can check their own profile without restrictions and self-register for client, partner, or internal staff roles with pending approval status. Registration attempts by already-registered users will be rejected with appropriate error messages in Indonesian.
+**User-visible outcome:** Admins and superadmins can view pending user registration requests in the Admin Panel card and approve or reject them with action buttons. The list updates automatically after each action.

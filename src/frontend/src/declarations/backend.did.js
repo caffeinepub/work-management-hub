@@ -36,7 +36,10 @@ export const User = IDL.Record({
   'name' : IDL.Text,
   'createdAt' : IDL.Int,
   'role' : Role,
+  'idUser' : IDL.Text,
+  'companyBisnis' : IDL.Opt(IDL.Text),
   'principalId' : IDL.Principal,
+  'kotaDomisili' : IDL.Opt(IDL.Text),
 });
 export const ApprovalStatus = IDL.Variant({
   'pending' : IDL.Null,
@@ -69,9 +72,9 @@ export const idlService = IDL.Service({
   'rejectUser' : IDL.Func([IDL.Principal], [], []),
   'requestApproval' : IDL.Func([], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'selfRegisterClient' : IDL.Func([IDL.Text], [], []),
+  'selfRegisterClient' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'selfRegisterInternal' : IDL.Func([IDL.Text, IDL.Text], [], []),
-  'selfRegisterPartner' : IDL.Func([IDL.Text], [], []),
+  'selfRegisterPartner' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
 });
 
@@ -103,7 +106,10 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'createdAt' : IDL.Int,
     'role' : Role,
+    'idUser' : IDL.Text,
+    'companyBisnis' : IDL.Opt(IDL.Text),
     'principalId' : IDL.Principal,
+    'kotaDomisili' : IDL.Opt(IDL.Text),
   });
   const ApprovalStatus = IDL.Variant({
     'pending' : IDL.Null,
@@ -136,9 +142,9 @@ export const idlFactory = ({ IDL }) => {
     'rejectUser' : IDL.Func([IDL.Principal], [], []),
     'requestApproval' : IDL.Func([], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'selfRegisterClient' : IDL.Func([IDL.Text], [], []),
+    'selfRegisterClient' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'selfRegisterInternal' : IDL.Func([IDL.Text, IDL.Text], [], []),
-    'selfRegisterPartner' : IDL.Func([IDL.Text], [], []),
+    'selfRegisterPartner' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
   });
 };

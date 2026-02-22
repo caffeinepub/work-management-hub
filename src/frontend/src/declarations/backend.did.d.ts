@@ -28,7 +28,10 @@ export interface User {
   'name' : string,
   'createdAt' : bigint,
   'role' : Role,
+  'idUser' : string,
+  'companyBisnis' : [] | [string],
   'principalId' : Principal,
+  'kotaDomisili' : [] | [string],
 }
 export interface UserApprovalInfo {
   'status' : ApprovalStatus,
@@ -58,9 +61,9 @@ export interface _SERVICE {
   'rejectUser' : ActorMethod<[Principal], undefined>,
   'requestApproval' : ActorMethod<[], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'selfRegisterClient' : ActorMethod<[string], undefined>,
+  'selfRegisterClient' : ActorMethod<[string, string], undefined>,
   'selfRegisterInternal' : ActorMethod<[string, string], undefined>,
-  'selfRegisterPartner' : ActorMethod<[string], undefined>,
+  'selfRegisterPartner' : ActorMethod<[string, string], undefined>,
   'setApproval' : ActorMethod<[Principal, ApprovalStatus], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;

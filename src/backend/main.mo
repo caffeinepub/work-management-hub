@@ -1,14 +1,17 @@
 import Map "mo:core/Map";
 import Array "mo:core/Array";
+import Iter "mo:core/Iter";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import UserApproval "user-approval/approval";
-import Migration "migration";
+import Random "mo:core/Random";
+import Text "mo:core/Text";
 
-(with migration = Migration.run)
+
+
 actor {
   public type Role = {
     #superadmin;
@@ -32,6 +35,9 @@ actor {
     role : Role;
     status : Status;
     createdAt : Int;
+    kotaDomisili : ?Text;
+    companyBisnis : ?Text;
+    idUser : Text;
   };
 
   public type UserProfile = {
@@ -45,6 +51,25 @@ actor {
   include MixinAuthorization(accessControlState);
 
   let approvalState = UserApproval.initState(accessControlState);
+
+  /// Helper functions for ID generation
+  func generateClientId() : async Text {
+    let randomActor = Random.crypto();
+    let randomNumber = await* randomActor.natRange(111111, 999999);
+    "CA-" # randomNumber.toText();
+  };
+
+  func generatePartnerId() : async Text {
+    let randomActor = Random.crypto();
+    let randomNumber = await* randomActor.natRange(11111, 99999);
+    "PA-" # randomNumber.toText();
+  };
+
+  func generateInternalId() : async Text {
+    let randomActor = Random.crypto();
+    let randomNumber = await* randomActor.natRange(1111, 9999);
+    "INT-" # randomNumber.toText();
+  };
 
   private func isAuthorizedAdmin(caller : Principal) : Bool {
     switch (users.get(caller)) {
@@ -68,6 +93,9 @@ actor {
       role = #superadmin;
       status = #active;
       createdAt = Time.now();
+      kotaDomisili = null;
+      companyBisnis = null;
+      idUser = "superadmin";
     };
 
     users.add(caller, user);
@@ -127,7 +155,6 @@ actor {
     users.remove(principalId);
   };
 
-  // Remove access control check so all callers can access their own profile
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     switch (users.get(caller)) {
       case (null) { null };
@@ -156,13 +183,16 @@ actor {
     };
     switch (profile.requestedRole) {
       case (null) { Runtime.trap("Role is required. For field requestedRole e.g. #user "); };
-      case (?role) {
+      case (?_role) {
         let user = {
           principalId = caller;
           name = profile.name;
           role = #client;
           status = #pending;
           createdAt = Time.now();
+          kotaDomisili = null;
+          companyBisnis = null;
+          idUser = "";
         };
         users.add(caller, user);
       };
@@ -212,6 +242,9 @@ actor {
       role = roleInternalUser;
       status = #active;
       createdAt = Time.now();
+      kotaDomisili = null;
+      companyBisnis = null;
+      idUser = "";
     };
 
     users.add(principalId, user);
@@ -254,38 +287,44 @@ actor {
     users.get(caller);
   };
 
-  // Allow anonymous users (caller = Anonymous Principal) to create new client account with pending status.
-  public shared ({ caller }) func selfRegisterClient(name : Text) : async () {
+  public shared ({ caller }) func selfRegisterClient(name : Text, company : Text) : async () {
     if (users.containsKey(caller)) {
       Runtime.trap("User already registered! Please use login.");
     };
+
+    let idUser = await generateClientId();
     let newUser : User = {
       principalId = caller;
       name;
       role = #client;
       status = #pending;
       createdAt = Time.now();
+      kotaDomisili = null;
+      companyBisnis = ?company;
+      idUser;
     };
     users.add(caller, newUser);
   };
 
-  // Allow anonymous users (caller = Anonymous Principal) to create new partner account with pending status.
-  public shared ({ caller }) func selfRegisterPartner(name : Text) : async () {
+  public shared ({ caller }) func selfRegisterPartner(name : Text, kota : Text) : async () {
     if (users.containsKey(caller)) {
       Runtime.trap("User already registered! Please use login.");
     };
+
+    let idUser = await generatePartnerId();
     let newUser : User = {
       principalId = caller;
       name;
       role = #partner;
       status = #pending;
       createdAt = Time.now();
+      kotaDomisili = ?kota;
+      companyBisnis = null;
+      idUser;
     };
     users.add(caller, newUser);
   };
 
-  // Allow anonymous users to register as internal staff (admin, finance, concierge, asistenmu, strategicPartner) with pending status.
-  // Expose the function as part of the actor for user registration
   public shared ({ caller }) func selfRegisterInternal(name : Text, inputRole : Text) : async () {
     if (users.containsKey(caller)) {
       Runtime.trap("User already registered! Please use login.");
@@ -317,14 +356,19 @@ actor {
       };
     };
 
+    let idUser = await generateInternalId();
     let newUser : User = {
       principalId = caller;
       name;
       role = requestedRole;
       status = #pending;
       createdAt = Time.now();
+      kotaDomisili = null;
+      companyBisnis = null;
+      idUser;
     };
 
     users.add(caller, newUser);
   };
 };
+
