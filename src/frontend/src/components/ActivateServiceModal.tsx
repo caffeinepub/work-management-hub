@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Check, ChevronsUpDown } from 'lucide-react';
+import { useActor } from '../hooks/useActor';
+import { useQuery } from '@tanstack/react-query';
+import { User, Role, Status } from '../backend';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 export interface ActivateServiceModalProps {
   isOpen: boolean;
@@ -7,6 +15,7 @@ export interface ActivateServiceModalProps {
 }
 
 export default function ActivateServiceModal({ isOpen, onClose }: ActivateServiceModalProps) {
+  const { actor, isFetching: actorFetching } = useActor();
   const [selectedClient, setSelectedClient] = useState('');
   const [selectedAsistenmu, setSelectedAsistenmu] = useState('');
   const [selectedServiceType, setSelectedServiceType] = useState('');
@@ -14,6 +23,34 @@ export default function ActivateServiceModal({ isOpen, onClose }: ActivateServic
   const [pricePerUnit, setPricePerUnit] = useState<number>(0);
   const [priceDisplayValue, setPriceDisplayValue] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [openClientCombo, setOpenClientCombo] = useState(false);
+  const [openAsistenmuCombo, setOpenAsistenmuCombo] = useState(false);
+
+  // Fetch all users for dropdowns
+  const { data: allUsers = [], isLoading: usersLoading } = useQuery<User[]>({
+    queryKey: ['allUsers'],
+    queryFn: async () => {
+      try {
+        if (!actor) throw new Error('Actor not available');
+        const approvals = await actor.listApprovals();
+        const userPromises = approvals.map(approval => actor.getUserProfile(approval.principal));
+        const users = await Promise.all(userPromises);
+        return users.filter((u): u is User => u !== null);
+      } catch (error: any) {
+        console.error('Error fetching users:', error);
+        toast.error(`Failed to fetch users: ${error.message || 'Unknown error'}`);
+        return [];
+      }
+    },
+    enabled: !!actor && !actorFetching && isOpen,
+    retry: 2,
+  });
+
+  // Filter active clients
+  const clientUsers = allUsers.filter(u => u.role === Role.client && u.status === Status.active);
+
+  // Filter active asistenmu
+  const asistenmuUsers = allUsers.filter(u => u.role === Role.asistenmu && u.status === Status.active);
 
   // Reset form when modal closes
   useEffect(() => {
@@ -25,6 +62,8 @@ export default function ActivateServiceModal({ isOpen, onClose }: ActivateServic
       setPricePerUnit(0);
       setPriceDisplayValue('');
       setErrors({});
+      setOpenClientCombo(false);
+      setOpenAsistenmuCombo(false);
     }
   }, [isOpen]);
 
@@ -105,11 +144,16 @@ export default function ActivateServiceModal({ isOpen, onClose }: ActivateServic
       totalGMV,
     });
 
+    toast.success('Service activation submitted successfully!');
     // Close modal after successful submission
     onClose();
   };
 
   if (!isOpen) return null;
+
+  // Get selected client and asistenmu names for display
+  const selectedClientUser = clientUsers.find(u => u.principalId.toString() === selectedClient);
+  const selectedAsistenmuUser = asistenmuUsers.find(u => u.principalId.toString() === selectedAsistenmu);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -135,41 +179,112 @@ export default function ActivateServiceModal({ isOpen, onClose }: ActivateServic
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="px-6 py-5">
           <div className="space-y-5">
-            {/* Client Selection */}
+            {/* Client Selection - Searchable Combobox */}
             <div>
               <label htmlFor="client" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Pilih Client
               </label>
-              <select
-                id="client"
-                value={selectedClient}
-                onChange={(e) => setSelectedClient(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-              >
-                <option value="">-- Pilih Client --</option>
-                <option value="PT Maju">PT Maju</option>
-                <option value="CV Sejahtera">CV Sejahtera</option>
-              </select>
+              <Popover open={openClientCombo} onOpenChange={setOpenClientCombo}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openClientCombo}
+                    className="w-full justify-between"
+                  >
+                    {selectedClientUser ? selectedClientUser.name : "-- Pilih Client --"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Cari client..." />
+                    <CommandList>
+                      <CommandEmpty>
+                        {usersLoading ? 'Loading...' : 'No client found.'}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {clientUsers.map((user) => (
+                          <CommandItem
+                            key={user.principalId.toString()}
+                            value={user.name}
+                            onSelect={() => {
+                              setSelectedClient(user.principalId.toString());
+                              setOpenClientCombo(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedClient === user.principalId.toString() ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div>
+                              <div className="font-medium">{user.name}</div>
+                              {user.companyBisnis && (
+                                <div className="text-xs text-muted-foreground">{user.companyBisnis}</div>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               {errors.client && (
                 <p className="mt-1 text-sm text-red-600">{errors.client}</p>
               )}
             </div>
 
-            {/* Asistenmu Selection */}
+            {/* Asistenmu Selection - Searchable Combobox */}
             <div>
               <label htmlFor="asistenmu" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Pilih Asistenmu
               </label>
-              <select
-                id="asistenmu"
-                value={selectedAsistenmu}
-                onChange={(e) => setSelectedAsistenmu(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-              >
-                <option value="">-- Pilih Asistenmu --</option>
-                <option value="Budi">Budi</option>
-                <option value="Siti">Siti</option>
-              </select>
+              <Popover open={openAsistenmuCombo} onOpenChange={setOpenAsistenmuCombo}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openAsistenmuCombo}
+                    className="w-full justify-between"
+                  >
+                    {selectedAsistenmuUser ? selectedAsistenmuUser.name : "-- Pilih Asistenmu --"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Cari asistenmu..." />
+                    <CommandList>
+                      <CommandEmpty>
+                        {usersLoading ? 'Loading...' : 'No asistenmu found.'}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {asistenmuUsers.map((user) => (
+                          <CommandItem
+                            key={user.principalId.toString()}
+                            value={user.name}
+                            onSelect={() => {
+                              setSelectedAsistenmu(user.principalId.toString());
+                              setOpenAsistenmuCombo(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedAsistenmu === user.principalId.toString() ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {user.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               {errors.asistenmu && (
                 <p className="mt-1 text-sm text-red-600">{errors.asistenmu}</p>
               )}
@@ -187,11 +302,9 @@ export default function ActivateServiceModal({ isOpen, onClose }: ActivateServic
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
               >
                 <option value="">-- Pilih Tipe Layanan --</option>
-                <option value="Tenang">Tenang</option>
-                <option value="Rapi">Rapi</option>
-                <option value="Fokus">Fokus</option>
-                <option value="Jaga">Jaga</option>
-                <option value="Efisien">Efisien</option>
+                <option value="reportWriting">Report Writing</option>
+                <option value="assistance">Assistance</option>
+                <option value="dataEntry">Data Entry</option>
               </select>
               {errors.serviceType && (
                 <p className="mt-1 text-sm text-red-600">{errors.serviceType}</p>
@@ -201,30 +314,26 @@ export default function ActivateServiceModal({ isOpen, onClose }: ActivateServic
             {/* Unit Quantity */}
             <div>
               <label htmlFor="unitQuantity" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Jumlah Unit Pembelian
+                Jumlah Unit
               </label>
               <input
                 type="number"
                 id="unitQuantity"
-                min="1"
                 value={unitQuantity || ''}
                 onChange={(e) => setUnitQuantity(parseInt(e.target.value) || 0)}
+                min="0"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                 placeholder="Masukkan jumlah unit"
               />
               {errors.unitQuantity && (
                 <p className="mt-1 text-sm text-red-600">{errors.unitQuantity}</p>
               )}
-              {/* Reactive helper text */}
-              <p className="mt-1.5 text-sm text-gray-600">
-                Setara dengan {effectiveHours} Jam Efektif
-              </p>
             </div>
 
             {/* Price Per Unit */}
             <div>
               <label htmlFor="pricePerUnit" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Harga Jual Per Unit (Rp)
+                Harga Jual per Unit (Rp)
               </label>
               <input
                 type="text"
@@ -237,28 +346,40 @@ export default function ActivateServiceModal({ isOpen, onClose }: ActivateServic
               {errors.pricePerUnit && (
                 <p className="mt-1 text-sm text-red-600">{errors.pricePerUnit}</p>
               )}
-              {/* Reactive GMV calculation */}
-              <p className="mt-1.5 text-sm font-bold text-emerald-600">
-                Total Tagihan (GMV): Rp {formatCurrency(totalGMV)}
-              </p>
+            </div>
+
+            {/* Calculated Fields */}
+            <div className="bg-gray-50 rounded-md p-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Jam Efektif:</span>
+                <span className="font-semibold text-gray-900">{effectiveHours} jam</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Total GMV:</span>
+                <span className="font-semibold text-emerald-600">Rp {formatCurrency(totalGMV)}</span>
+              </div>
             </div>
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
+          <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={!isFormValid}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors ${
+                isFormValid
+                  ? 'bg-emerald-600 hover:bg-emerald-700'
+                  : 'bg-gray-300 cursor-not-allowed'
+              }`}
             >
-              Aktifkan Layanan
+              Aktivasi Layanan
             </button>
           </div>
         </form>

@@ -18,6 +18,13 @@ export interface TaskClientView {
     detailPermintaan: string;
     layananId: string;
 }
+export type InputEstimasiAMResult = {
+    __kind__: "ok";
+    ok: string;
+} | {
+    __kind__: "err";
+    err: string;
+};
 export interface InternalData {
     levelPartner: string;
     jamEfektif: bigint;
@@ -38,6 +45,8 @@ export interface User {
     name: string;
     createdAt: bigint;
     role: Role;
+    email?: string;
+    phoneNumber?: string;
     idUser: string;
     companyBisnis?: string;
     principalId: Principal;
@@ -108,15 +117,26 @@ export interface FinancialResult {
 }
 export interface UserProfile {
     name: string;
+    email?: string;
     requestedRole?: string;
+    phoneNumber?: string;
 }
-export type InputEstimasiAMResult = {
-    __kind__: "ok";
-    ok: string;
-} | {
-    __kind__: "err";
-    err: string;
-};
+export interface Layanan {
+    id: string;
+    status: Variant_active_pendingApproval_dormant_depleted;
+    clientId: Principal;
+    harga: bigint;
+    nama: string;
+    createdAt: bigint;
+    deadline: bigint;
+    resourceType: Variant_dedicated_standard;
+    adminId: Principal;
+    scopeKerja: string;
+    layananType: Variant_reportWriting_assistance_dataEntry;
+    jamOnHold: bigint;
+    saldoOriginal: bigint;
+    saldoJamEfektif: bigint;
+}
 export enum ApprovalStatus {
     pending = "pending",
     approved = "approved",
@@ -134,7 +154,8 @@ export enum Role {
 }
 export enum Status {
     active = "active",
-    pending = "pending"
+    pending = "pending",
+    rejected = "rejected"
 }
 export enum TaskStatus {
     PendingPartner = "PendingPartner",
@@ -152,6 +173,21 @@ export enum UserRole {
     user = "user",
     guest = "guest"
 }
+export enum Variant_active_pendingApproval_dormant_depleted {
+    active = "active",
+    pendingApproval = "pendingApproval",
+    dormant = "dormant",
+    depleted = "depleted"
+}
+export enum Variant_dedicated_standard {
+    dedicated = "dedicated",
+    standard = "standard"
+}
+export enum Variant_reportWriting_assistance_dataEntry {
+    reportWriting = "reportWriting",
+    assistance = "assistance",
+    dataEntry = "dataEntry"
+}
 export interface backendInterface {
     addPartnerBalance(partnerId: Principal, amount: bigint): Promise<string>;
     approveEstimasiClient(taskId: string): Promise<ApproveEstimasiClientResult>;
@@ -164,9 +200,10 @@ export interface backendInterface {
     createTask(clientId: Principal, layananId: string, judul: string, detailPermintaan: string): Promise<CreateTaskResult>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
+    getClientMainService(): Promise<Layanan | null>;
     getClientTasks(clientId: Principal): Promise<Array<TaskClientView>>;
     getCurrentUser(): Promise<User | null>;
-    getMyLayananAktif(clientId: Principal): Promise<Array<LayananClientView>>;
+    getMyLayananAktif(): Promise<Array<LayananClientView>>;
     getPendingRequests(): Promise<Array<User>>;
     getUserProfile(principalId: Principal): Promise<User | null>;
     inputEstimasiAM(taskId: string, estimasiJam: bigint): Promise<InputEstimasiAMResult>;
@@ -180,9 +217,11 @@ export interface backendInterface {
     requestWithdraw(partnerId: Principal, amount: bigint): Promise<string>;
     responPartner(taskId: string, acceptance: boolean): Promise<ResponPartnerResult>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    selfRegisterClient(name: string, company: string): Promise<void>;
+    selfRegisterClient(name: string, company: string, phoneNumber: string, email: string): Promise<void>;
     selfRegisterInternal(name: string, inputRole: string): Promise<void>;
     selfRegisterPartner(name: string, kota: string): Promise<void>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
+    updateProfile(name: string, phoneNumber: string, email: string): Promise<void>;
     updateTaskStatus(taskId: string, newStatus: TaskStatus): Promise<UpdateTaskStatusResult>;
+    updateUserRole(principalId: Principal, newRole: Role): Promise<void>;
 }

@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-create-a-self-contained-modal-component-activateservicemodal-in-frontend-src-components-using-react-state-isopen-setisopen-and-tailwind-css-include-a-semi-transparent-black-overlay-background",
-      "featureTitle": "Create a self-contained modal component 'ActivateServiceModal' in frontend/src/components using React State (isOpen, setIsOpen) and Tailwind CSS. Include a semi-transparent black overlay background.",
+      "featureId": "feature-fix-infinite-loading-spinner-bug-in-usermanagementpage-component-user-management-route-by-wrapping-all-backend-data-fetch-calls-in-try-catch-blocks-ensuring-isloading-state-is-set-to-false-in-finally-blocks-regardless-of-success-or-failure-and-displaying-error-messages-via-toast-notifications-when-data-fetching-fails",
+      "featureTitle": "Fix infinite loading spinner bug in UserManagementPage component (/user-management route) by wrapping all backend data fetch calls in try-catch blocks, ensuring isLoading state is set to false in finally blocks regardless of success or failure, and displaying error messages via toast notifications when data fetching fails",
       "files": [
-        "frontend/src/components/ActivateServiceModal.tsx"
+        "frontend/src/components/UserManagementPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -22,8 +22,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-form-fields-in-the-modal-in-this-exact-order-1-select-dropdown-pilih-client-with-mock-options-pt-maju-and-cv-sejahtera-2-select-dropdown-pilih-asistenmu-with-mock-options-budi-and-siti-3-select-dropdown-tipe-layanan-with-options-tenang-rapi-fokus-jaga-efisien-4-number-input-jumlah-unit-pembelian-5-number-input-harga-jual-per-unit-rp",
-      "featureTitle": "Add form fields in the modal in this exact order: (1) Select dropdown 'Pilih Client' with mock options 'PT Maju' and 'CV Sejahtera', (2) Select dropdown 'Pilih Asistenmu' with mock options 'Budi' and 'Siti', (3) Select dropdown 'Tipe Layanan' with options: Tenang, Rapi, Fokus, Jaga, Efisien, (4) Number input 'Jumlah Unit Pembelian', (5) Number input 'Harga Jual Per Unit (Rp)'.",
+      "featureId": "feature-convert-the-pilih-client-dropdown-in-activateservicemodal-component-from-standard-select-to-a-searchable-autocomplete-combobox-that-allows-superadmin-to-type-and-filter-users-by-name-while-maintaining-the-user-id-principal-as-the-submitted-value-and-displaying-the-user-s-name-as-the-visible-label",
+      "featureTitle": "Convert the 'Pilih Client' dropdown in ActivateServiceModal component from standard select to a searchable/autocomplete combobox that allows superadmin to type and filter users by name, while maintaining the user ID (Principal) as the submitted value and displaying the user's name as the visible label",
       "files": [
         "frontend/src/components/ActivateServiceModal.tsx"
       ],
@@ -42,8 +42,8 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-below-the-jumlah-unit-pembelian-input-display-reactive-helper-text-in-gray-color-showing-setara-dengan-jumlah-unit-2-jam-efektif-that-updates-automatically-as-the-user-changes-the-unit-quantity",
-      "featureTitle": "Below the 'Jumlah Unit Pembelian' input, display reactive helper text in gray color showing 'Setara dengan [Jumlah Unit * 2] Jam Efektif' that updates automatically as the user changes the unit quantity.",
+      "featureId": "feature-convert-the-pilih-asistenmu-dropdown-in-activateservicemodal-component-from-standard-select-to-a-searchable-autocomplete-combobox-that-allows-superadmin-to-type-and-filter-users-by-name-while-maintaining-the-user-id-principal-as-the-submitted-value-and-displaying-the-user-s-name-as-the-visible-label",
+      "featureTitle": "Convert the 'Pilih Asistenmu' dropdown in ActivateServiceModal component from standard select to a searchable/autocomplete combobox that allows superadmin to type and filter users by name, while maintaining the user ID (Principal) as the submitted value and displaying the user's name as the visible label",
       "files": [
         "frontend/src/components/ActivateServiceModal.tsx"
       ],
@@ -58,106 +58,6 @@
       ],
       "testIds": [
         "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-below-the-harga-jual-per-unit-input-display-reactive-helper-text-in-bold-primary-color-showing-total-tagihan-gmv-rp-jumlah-unit-harga-jual-with-thousand-separator-formatting-e-g-1-500-000-that-updates-automatically-as-the-user-changes-either-unit-quantity-or-price",
-      "featureTitle": "Below the 'Harga Jual Per Unit' input, display reactive helper text in bold primary color showing 'Total Tagihan (GMV): Rp [Jumlah Unit * Harga Jual]' with thousand separator formatting (e.g., 1.500.000) that updates automatically as the user changes either unit quantity or price.",
-      "files": [
-        "frontend/src/components/ActivateServiceModal.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "user-approval@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-in-the-harga-jual-per-unit-input-field-automatically-format-the-display-value-with-thousand-separators-dots-as-the-user-types-e-g-typing-1500000-shows-as-1-500-000-while-maintaining-the-underlying-state-value-as-a-pure-number",
-      "featureTitle": "In the 'Harga Jual Per Unit' input field, automatically format the display value with thousand separators (dots) as the user types (e.g., typing 1500000 shows as 1.500.000), while maintaining the underlying state value as a pure number.",
-      "files": [
-        "frontend/src/components/ActivateServiceModal.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "user-approval@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-5"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-form-validation-all-fields-are-required-cannot-be-empty-jumlah-unit-pembelian-must-be-at-least-1-cannot-be-0-or-negative-harga-jual-per-unit-must-be-greater-than-0-display-validation-errors-appropriately",
-      "featureTitle": "Implement form validation: all fields are required (cannot be empty), 'Jumlah Unit Pembelian' must be at least 1 (cannot be 0 or negative), 'Harga Jual Per Unit' must be greater than 0. Display validation errors appropriately.",
-      "files": [
-        "frontend/src/components/ActivateServiceModal.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "user-approval@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-6"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-two-action-buttons-at-the-bottom-of-the-modal-1-batal-button-with-outline-ghost-styling-that-closes-the-modal-2-aktifkan-layanan-button-with-solid-primary-styling-that-includes-a-todo-comment-todo-panggil-fungsi-backend-motoko-aktifkanlayanan-in-its-click-handler",
-      "featureTitle": "Add two action buttons at the bottom of the modal: (1) 'Batal' button with outline/ghost styling that closes the modal, (2) 'Aktifkan Layanan' button with solid primary styling that includes a TODO comment '// TODO: Panggil fungsi backend Motoko aktifkanLayanan()' in its click handler.",
-      "files": [
-        "frontend/src/components/ActivateServiceModal.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "user-approval@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-7"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-style-the-modal-with-a-clean-minimalist-professional-design-using-generous-spacing-between-inputs-smooth-border-radius-and-ensure-the-overall-layout-is-legible-and-user-friendly-for-finance-superadmin-roles",
-      "featureTitle": "Style the modal with a clean, minimalist, professional design using generous spacing between inputs, smooth border-radius, and ensure the overall layout is legible and user-friendly for Finance/Superadmin roles.",
-      "files": [
-        "frontend/src/components/ActivateServiceModal.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "user-approval@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-8"
       ],
       "confidence": "high"
     }

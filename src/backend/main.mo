@@ -12,6 +12,8 @@ import Text "mo:core/Text";
 import Nat "mo:core/Nat";
 import Int "mo:core/Int";
 
+
+
 actor {
   public type Role = {
     #superadmin;
@@ -27,6 +29,7 @@ actor {
   public type Status = {
     #pending;
     #active;
+    #rejected;
   };
 
   public type User = {
@@ -38,11 +41,15 @@ actor {
     kotaDomisili : ?Text;
     companyBisnis : ?Text;
     idUser : Text;
+    phoneNumber : ?Text;
+    email : ?Text;
   };
 
   public type UserProfile = {
     name : Text;
     requestedRole : ?Text;
+    phoneNumber : ?Text;
+    email : ?Text;
   };
 
   public type Layanan = {
@@ -253,17 +260,16 @@ actor {
     "BAL-" # randomNumber.toText();
   };
 
-  public query ({ caller }) func getMyLayananAktif(clientId : Principal) : async [LayananClientView] {
-    // Authorization: Clients can only query their own layanan
-    // Account managers can query any client's layanan for management purposes
-    if (caller != clientId and not isAccountManager(caller)) {
-      Runtime.trap("Unauthorized: Only the client or account managers can query client layanan");
+  public query ({ caller }) func getMyLayananAktif() : async [LayananClientView] {
+    // Authorization: Only active clients can query their own layanan
+    if (not isActiveClient(caller)) {
+      Runtime.trap("Unauthorized: Only active clients can view their services");
     };
 
-    // Filter active layanans for the specific client with saldo 2 or more (at least 1 hour)
+    // Filter active layanans for the caller with saldo 2 or more (at least 1 hour)
     layanans.values().toArray().filter(
       func(layanan) {
-        layanan.status == #active and layanan.clientId == clientId and layanan.saldoJamEfektif >= 2
+        layanan.status == #active and layanan.clientId == caller and layanan.saldoJamEfektif >= 2
       }
     ).map(func(layanan) {
       let unitAktif = layanan.saldoJamEfektif / 2 : Nat;
@@ -273,7 +279,7 @@ actor {
         layanan with
         unitAktif;
         unitOnHold;
-        jumlahSharing = 1; // Mocked to 1 as no sharing implementation yet
+        jumlahSharing = 1;
         namaAsistenmu = "MockNamaAsistenmu";
         status = "active";
         saldo = layanan.saldoJamEfektif;
@@ -281,7 +287,22 @@ actor {
     });
   };
 
-  // (Rest of your actor code)
+  public query ({ caller }) func getClientMainService() : async ?Layanan {
+    // Authorization: Only active clients can query their own main service
+    if (not isActiveClient(caller)) {
+      Runtime.trap("Unauthorized: Only active clients can view their main service");
+    };
+
+    let activeLayanan = layanans.values().toArray().find(func(layanan) {
+      layanan.clientId == caller and layanan.status == #active
+    });
+
+    switch (activeLayanan) {
+      case (?layanan) { ?layanan };
+      case (null) { null };
+    };
+  };
+
   private func isAuthorizedAdmin(caller : Principal) : Bool {
     switch (users.get(caller)) {
       case (null) { false };
@@ -343,6 +364,8 @@ actor {
       role = #superadmin;
       status = #active;
       createdAt = Time.now();
+      phoneNumber = null;
+      email = null;
     };
 
     users.add(caller, user);
@@ -392,22 +415,61 @@ actor {
       Runtime.trap("Unauthorized: Only Superadmin and Admin roles can perform this action");
     };
 
-    let userExists = users.containsKey(principalId);
-
-    if (not userExists) {
-      Runtime.trap("User not found");
+    let user = switch (users.get(principalId)) {
+      case (null) { Runtime.trap("User not found") };
+      case (?user) { user };
     };
 
-    users.remove(principalId);
+    let rejectedUser : User = {
+      principalId = user.principalId;
+      name = user.name;
+      role = user.role;
+      status = #rejected;
+      createdAt = user.createdAt;
+      kotaDomisili = user.kotaDomisili;
+      companyBisnis = user.companyBisnis;
+      idUser = user.idUser;
+      phoneNumber = user.phoneNumber;
+      email = user.email;
+    };
+
+    users.add(principalId, rejectedUser);
+  };
+
+  public shared ({ caller }) func updateUserRole(principalId : Principal, newRole : Role) : async () {
+    if (not isAuthorizedAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only Superadmin and Admin roles can perform this action");
+    };
+
+    switch (users.get(principalId)) {
+      case (null) { Runtime.trap("User not found") };
+      case (?user) {
+        let updatedUser = { user with role = newRole };
+        users.add(principalId, updatedUser);
+
+        let accessControlRole = switch (updatedUser.role) {
+          case (#superadmin) { #admin };
+          case (#admin) { #admin };
+          case (_) { #user };
+        };
+        AccessControl.assignRole(accessControlState, caller, principalId, accessControlRole);
+      };
+    };
   };
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view profiles");
+    };
+
     switch (users.get(caller)) {
       case (null) { null };
       case (?user) {
         ?{
           name = user.name;
           requestedRole = null;
+          phoneNumber = user.phoneNumber;
+          email = user.email;
         };
       };
     };
@@ -439,8 +501,35 @@ actor {
           kotaDomisili = null;
           companyBisnis = null;
           idUser = "";
+          phoneNumber = profile.phoneNumber;
+          email = profile.email;
         };
         users.add(caller, user);
+      };
+    };
+  };
+
+  public shared ({ caller }) func updateProfile(name : Text, phoneNumber : Text, email : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can update profiles");
+    };
+
+    switch (users.get(caller)) {
+      case (null) {
+        Runtime.trap("User not found. Please register first.");
+      };
+      case (?user) {
+        if (user.status != #active) {
+          Runtime.trap("Unauthorized: Only active users can update their profile");
+        };
+
+        let updatedUser = {
+          user with
+          name = name;
+          phoneNumber = ?phoneNumber;
+          email = ?email;
+        };
+        users.add(caller, updatedUser);
       };
     };
   };
@@ -491,6 +580,8 @@ actor {
       kotaDomisili = null;
       companyBisnis = null;
       idUser = "";
+      phoneNumber = null;
+      email = null;
     };
 
     users.add(principalId, user);
@@ -530,10 +621,13 @@ actor {
   };
 
   public query ({ caller }) func getCurrentUser() : async ?User {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can view their profile");
+    };
     users.get(caller);
   };
 
-  public shared ({ caller }) func selfRegisterClient(name : Text, company : Text) : async () {
+  public shared ({ caller }) func selfRegisterClient(name : Text, company : Text, phoneNumber : Text, email : Text) : async () {
     if (users.containsKey(caller)) {
       Runtime.trap("User already registered! Please use login.");
     };
@@ -548,6 +642,8 @@ actor {
       kotaDomisili = null;
       companyBisnis = ?company;
       idUser;
+      phoneNumber = ?phoneNumber;
+      email = ?email;
     };
     users.add(caller, newUser);
   };
@@ -567,6 +663,8 @@ actor {
       kotaDomisili = ?kota;
       companyBisnis = null;
       idUser;
+      phoneNumber = null;
+      email = null;
     };
     users.add(caller, newUser);
   };
@@ -612,43 +710,36 @@ actor {
       kotaDomisili = null;
       companyBisnis = null;
       idUser;
+      phoneNumber = null;
+      email = null;
     };
 
     users.add(caller, newUser);
   };
 
-  // TASKS
-
   public shared ({ caller }) func createTask(clientId : Principal, layananId : Text, judul : Text, detailPermintaan : Text) : async CreateTaskResult {
-    // Authorization: Only active clients can create tasks, and only for themselves
-    // OR admins can create tasks on behalf of clients
     if (not isActiveClient(caller) and not isAuthorizedAdmin(caller)) {
       Runtime.trap("Unauthorized: Only active clients or admins can create tasks");
     };
 
-    // If caller is a client (not admin), they can only create tasks for themselves
     if (isActiveClient(caller) and caller != clientId) {
       Runtime.trap("Unauthorized: Clients can only create tasks for themselves");
     };
 
-    // Validate and fetch the Layanan
     switch (layanans.get(layananId)) {
       case (null) {
         #err("LayananId tidak ditemukan. Pastikan id layanan sudah benar.");
       };
       case (?layanan) {
-        // Verify that the layanan belongs to the specified client
         if (layanan.clientId != clientId) {
           return #err("Layanan tidak dimiliki oleh client yang ditentukan.");
         };
 
-        // Check balance, MUST be minimum 2 (1 jam)
         if (layanan.saldoJamEfektif < 2) {
           return #err("Layanan saldo jam tidak cukup. Minimum request adalah 1 jam (2 unit), saldo jam sekarang: " # layanan.saldoJamEfektif.toText());
         };
 
-        // Generate new task
-        let _layanan = layanan; // Avoid re-borrow error
+        let _layanan = layanan;
         let taskId = await generateTaskId();
         let newTask : Task = {
           id = taskId;
@@ -669,8 +760,6 @@ actor {
   };
 
   public shared ({ caller }) func inputEstimasiAM(taskId : Text, estimasiJam : Nat) : async InputEstimasiAMResult {
-    // Authorization: Only Account Managers (AM) can input estimates
-    // AM roles: superadmin, admin, asistenmu, concierge
     if (not isAccountManager(caller)) {
       Runtime.trap("Unauthorized: Only Account Managers (admin, asistenmu, concierge) can input time estimates");
     };
@@ -696,14 +785,13 @@ actor {
   };
 
   public shared ({ caller }) func approveEstimasiClient(taskId : Text) : async ApproveEstimasiClientResult {
-    // Authorization: Only the client who owns the task can approve
     switch (tasks.get(taskId)) {
       case (null) {
         #err("Task tidak ditemukan. Pastikan id task sudah benar.");
       };
       case (?task) {
         if (task.clientId != caller) {
-          return #err("Unauthorized: Only the client who owns the task can approve it");
+          Runtime.trap("Unauthorized: Only the client who owns the task can approve it");
         };
 
         if (task.status != #AwaitingClientApproval) {
@@ -715,18 +803,15 @@ actor {
             #err("LayananId tidak ditemukan. Pastikan layanan masih aktif.");
           };
           case (?layanan) {
-            // Check if Layanan has enough saldo
             if (layanan.saldoJamEfektif < task.estimasiJam) {
               return #err("Layanan saldo jam tidak cukup untuk task ini. Saldo sekarang: " # layanan.saldoJamEfektif.toText());
             };
 
-            // Deduct saldo from Layanan
             let updatedLayanan = {
               layanan with
               saldoJamEfektif = layanan.saldoJamEfektif - task.estimasiJam
             };
 
-            // Update task status
             let updatedTask = {
               task with
               status = #PendingPartner;
@@ -743,7 +828,6 @@ actor {
   };
 
   public shared ({ caller }) func assignPartner(taskId : Text, partnerId : Principal, scopeKerja : Text, deadline : Int, linkDriveInternal : Text, jamEfektif : Nat, levelPartner : Text) : async AssignPartnerResult {
-    // Authorization: Only account managers (AM) can assign partners
     if (not isAccountManager(caller)) {
       Runtime.trap("Unauthorized: Only account managers (AM) can assign partners to tasks");
     };
@@ -779,7 +863,6 @@ actor {
   };
 
   public shared ({ caller }) func responPartner(taskId : Text, acceptance : Bool) : async ResponPartnerResult {
-    // Authorization: Only assigned partner can respond to task
     switch (tasks.get(taskId)) {
       case (null) {
         #err("Task tidak ditemukan. Pastikan id task sudah benar.");
@@ -791,16 +874,14 @@ actor {
           };
           case (?internalData) {
             if (internalData.partnerId != caller) {
-              return #err("Unauthorized: Only the assigned partner can respond to this task");
+              Runtime.trap("Unauthorized: Only the assigned partner can respond to this task");
             };
 
-            // Check if Task is in PendingPartner status
             if (task.status != #PendingPartner) {
               return #err("Task is not in a state pending partner response");
             };
 
             if (acceptance) {
-              // Partner accepted
               let updatedTask = {
                 task with
                 status = #OnProgress;
@@ -811,7 +892,6 @@ actor {
 
               #ok("Task accepted by partner: " # taskId);
             } else {
-              // Partner rejected, refund saldo to Layanan
               switch (layanans.get(task.layananId)) {
                 case (null) {
                   #err("LayananId tidak ditemukan. Balancing refund failed");
@@ -842,31 +922,23 @@ actor {
   };
 
   public shared ({ caller }) func updateTaskStatus(taskId : Text, newStatus : TaskStatus) : async UpdateTaskStatusResult {
-    // Authorization: Account managers can update any task status
-    // Partners can only update status for tasks assigned to them
-    // This function manages revision cycles: OnProgress → InQA → ClientReview → Revision → OnProgress
-
     switch (tasks.get(taskId)) {
       case (null) {
         #err("Task tidak ditemukan. Pastikan id task sudah benar.");
       };
       case (?task) {
-        // Check if caller is an account manager
         if (isAccountManager(caller)) {
-          // Account managers can update any task
           let updatedTask = { task with status = newStatus };
           tasks.add(taskId, updatedTask);
           return #ok("Task status updated successfully. Task id: " # taskId);
         };
 
-        // Check if caller is the assigned partner
         switch (task.internalData) {
           case (null) {
             Runtime.trap("Unauthorized: Only account managers can update task status");
           };
           case (?internalData) {
             if (internalData.partnerId == caller and isActivePartner(caller)) {
-              // Partner can only update their assigned task
               let updatedTask = { task with status = newStatus };
               tasks.add(taskId, updatedTask);
               return #ok("Task status updated successfully. Task id: " # taskId);
@@ -880,7 +952,6 @@ actor {
   };
 
   public shared ({ caller }) func completeTask(taskId : Text) : async CompleteTaskResult {
-    // Authorization: Only account managers can complete tasks (financial trigger)
     if (not isAccountManager(caller)) {
       Runtime.trap("Unauthorized: Only account managers can complete tasks");
     };
@@ -904,7 +975,6 @@ actor {
                 return #err("Task does not have internal data for completion. Task id: " # taskId);
               };
               case (?internalData) {
-                // Burn units by subtracting jamEfektif from jamOnHold
                 if (layanan.jamOnHold < task.estimasiJam) {
                   return #err("Insufficient jamOnHold balance for completion. Task id: " # taskId);
                 };
@@ -913,7 +983,6 @@ actor {
                   jamOnHold = layanan.jamOnHold - task.estimasiJam;
                 };
 
-                // Calculate partner payment based on partner's hourly rate
                 let hourlyRate = switch (internalData.levelPartner) {
                   case ("Junior") { 35000 };
                   case ("Senior") { 55000 };
@@ -923,24 +992,18 @@ actor {
 
                 let partnerPayment : Nat = internalData.jamEfektif * hourlyRate;
 
-                // Pseudo-code: Add partner payment to partner balance (needs implementation)
-                // Add partner payment to partner's balance
-
-                // Update task status to Completed
                 let updatedTask = { task with status = #Completed };
 
-                // Prepare financial result
                 let financialResult : FinancialResult = {
                   status = "success";
                   taskId;
                   jamDibakar = task.estimasiJam;
                   jumlahBayar = internalData.jamEfektif;
                   partnerFee = partnerPayment;
-                  platformFee = partnerPayment / 4 : Nat; // 25% platform fee
-                  partnerReferralFee = partnerPayment / 20 : Nat; // 5% referral fee
+                  platformFee = partnerPayment / 4 : Nat;
+                  partnerReferralFee = partnerPayment / 20 : Nat;
                 };
 
-                // Update both layanan and task
                 layanans.add(task.layananId, updatedLayanan);
                 tasks.add(taskId, updatedTask);
 
@@ -954,8 +1017,6 @@ actor {
   };
 
   public query ({ caller }) func getClientTasks(clientId : Principal) : async [TaskClientView] {
-    // Authorization: Clients can only query their own tasks
-    // Account managers can query any client's tasks for management purposes
     if (caller != clientId and not isAccountManager(caller)) {
       Runtime.trap("Unauthorized: Only the client or account managers can query client tasks");
     };
@@ -966,11 +1027,9 @@ actor {
       }
     ).map(
       func(task) : TaskClientView {
-        // MASKING LOGIC: Hide partner rejection details from client view
-        // PendingPartner and RejectedByPartner both display as "Sedang Didelegasikan"
         let maskedStatus = switch (task.status) {
-          case (#PendingPartner) { "Sedang Didelegasikan" }; // Masking: hide pending partner status
-          case (#RejectedByPartner) { "Sedang Didelegasikan" }; // Masking: hide rejection from client
+          case (#PendingPartner) { "Sedang Didelegasikan" };
+          case (#RejectedByPartner) { "Sedang Didelegasikan" };
           case (#OnProgress) { "Sedang Dikerjakan" };
           case (#InQA) { "Quality Assurance" };
           case (#ClientReview) { "Client Review" };
@@ -983,7 +1042,7 @@ actor {
         {
           task with
           status = maskedStatus;
-          internalData = null; // Exclude internal data from client view
+          internalData = null;
         };
       }
     );
@@ -1016,11 +1075,13 @@ actor {
     };
   };
 
-  // Request Withdraw feature
   public shared ({ caller }) func requestWithdraw(partnerId : Principal, amount : Nat) : async Text {
-    // Ensure only the partner can request their own withdrawal
     if (caller != partnerId) {
       Runtime.trap("Unauthorized: Only the partner can request their own withdrawal");
+    };
+
+    if (not isActivePartner(caller)) {
+      Runtime.trap("Unauthorized: Only active partners can request withdrawals");
     };
 
     if (amount == 0) {
@@ -1036,7 +1097,6 @@ actor {
           Runtime.trap("Insufficient balance for withdrawal");
         };
 
-        // Kunci Saldo
         let updatedWallet = {
           wallet with
           availableBalance = wallet.availableBalance - amount;
@@ -1044,7 +1104,6 @@ actor {
         };
         partnerWallets.add(partnerId, updatedWallet);
 
-        // Generate unique withdrawal request ID
         let requestId = "WD-" # Time.now().toText() # "-" # withdrawRequestCounter.toText();
 
         let newRequest : WithdrawRequest = {
@@ -1058,7 +1117,6 @@ actor {
         };
         withdrawRequests.add(requestId, newRequest);
 
-        // Increment the state counter
         withdrawRequestCounter += 1;
 
         requestId;
@@ -1066,9 +1124,7 @@ actor {
     };
   };
 
-  // Approve Withdraw feature
   public shared ({ caller }) func approveWithdraw(requestId : Text, financeId : Principal) : async Text {
-    // TODO: Validasi isFinance(msg.caller)
     if (not isFinance(caller)) {
       Runtime.trap("Unauthorized: Only finance role can approve withdrawals");
     };
@@ -1087,7 +1143,6 @@ actor {
             Runtime.trap("Partner wallet not found");
           };
           case (?wallet) {
-            // EKSEKUSI SUKSES
             let updatedWallet = {
               wallet with
               pendingBalance = wallet.pendingBalance - withdrawRequest.amount;
@@ -1095,7 +1150,6 @@ actor {
             };
             partnerWallets.add(withdrawRequest.partnerId, updatedWallet);
 
-            // Update withdrawal request status
             let updatedRequest = {
               withdrawRequest with
               status = #Approved;
@@ -1111,9 +1165,7 @@ actor {
     };
   };
 
-  // Reject Withdraw feature
   public shared ({ caller }) func rejectWithdraw(requestId : Text, financeId : Principal) : async Text {
-    // TODO: Validasi isFinance(msg.caller)
     if (not isFinance(caller)) {
       Runtime.trap("Unauthorized: Only finance role can reject withdrawals");
     };
@@ -1132,7 +1184,6 @@ actor {
             Runtime.trap("Partner wallet not found");
           };
           case (?wallet) {
-            // Refund Saldo
             let updatedWallet = {
               wallet with
               pendingBalance = wallet.pendingBalance - withdrawRequest.amount;
@@ -1140,7 +1191,6 @@ actor {
             };
             partnerWallets.add(withdrawRequest.partnerId, updatedWallet);
 
-            // Update withdrawal request status
             let updatedRequest = {
               withdrawRequest with
               status = #Rejected;

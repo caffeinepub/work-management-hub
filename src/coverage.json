@@ -1,29 +1,29 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-22T16:18:53.616Z",
+  "generatedAt": "2026-02-22T18:32:50.626Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 8,
-    "implemented": 8,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Create a self-contained modal component 'ActivateServiceModal' in frontend/src/components using React State (isOpen, setIsOpen) and Tailwind CSS. Include a semi-transparent black overlay background.",
+        "summary": "Fix infinite loading spinner bug in UserManagementPage component (/user-management route) by wrapping all backend data fetch calls in try-catch blocks, ensuring isLoading state is set to false in finally blocks regardless of success or failure, and displaying error messages via toast notifications when data fetching fails",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
+          "frontend/src/components/UserManagementPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
+          "frontend/src/components/UserManagementPage.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Add form fields in the modal in this exact order: (1) Select dropdown 'Pilih Client' with mock options 'PT Maju' and 'CV Sejahtera', (2) Select dropdown 'Pilih Asistenmu' with mock options 'Budi' and 'Siti', (3) Select dropdown 'Tipe Layanan' with options: Tenang, Rapi, Fokus, Jaga, Efisien, (4) Number input 'Jumlah Unit Pembelian', (5) Number input 'Harga Jual Per Unit (Rp)'.",
+        "summary": "Convert the 'Pilih Client' dropdown in ActivateServiceModal component from standard select to a searchable/autocomplete combobox that allows superadmin to type and filter users by name, while maintaining the user ID (Principal) as the submitted value and displaying the user's name as the visible label",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/ActivateServiceModal.tsx"
@@ -34,62 +34,7 @@
       },
       {
         "id": "REQ-3",
-        "summary": "Below the 'Jumlah Unit Pembelian' input, display reactive helper text in gray color showing 'Setara dengan [Jumlah Unit * 2] Jam Efektif' that updates automatically as the user changes the unit quantity.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Below the 'Harga Jual Per Unit' input, display reactive helper text in bold primary color showing 'Total Tagihan (GMV): Rp [Jumlah Unit * Harga Jual]' with thousand separator formatting (e.g., 1.500.000) that updates automatically as the user changes either unit quantity or price.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
-        ]
-      },
-      {
-        "id": "REQ-5",
-        "summary": "In the 'Harga Jual Per Unit' input field, automatically format the display value with thousand separators (dots) as the user types (e.g., typing 1500000 shows as 1.500.000), while maintaining the underlying state value as a pure number.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
-        ]
-      },
-      {
-        "id": "REQ-6",
-        "summary": "Implement form validation: all fields are required (cannot be empty), 'Jumlah Unit Pembelian' must be at least 1 (cannot be 0 or negative), 'Harga Jual Per Unit' must be greater than 0. Display validation errors appropriately.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
-        ]
-      },
-      {
-        "id": "REQ-7",
-        "summary": "Add two action buttons at the bottom of the modal: (1) 'Batal' button with outline/ghost styling that closes the modal, (2) 'Aktifkan Layanan' button with solid primary styling that includes a TODO comment '// TODO: Panggil fungsi backend Motoko aktifkanLayanan()' in its click handler.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
-        ]
-      },
-      {
-        "id": "REQ-8",
-        "summary": "Style the modal with a clean, minimalist, professional design using generous spacing between inputs, smooth border-radius, and ensure the overall layout is legible and user-friendly for Finance/Superadmin roles.",
+        "summary": "Convert the 'Pilih Asistenmu' dropdown in ActivateServiceModal component from standard select to a searchable/autocomplete combobox that allows superadmin to type and filter users by name, while maintaining the user ID (Principal) as the submitted value and displaying the user's name as the visible label",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/ActivateServiceModal.tsx"
@@ -106,7 +51,8 @@
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/components/ActivateServiceModal.tsx",
-    "frontend/src/components/InternalDashboard.tsx",
+    "frontend/src/components/UserManagementPage.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

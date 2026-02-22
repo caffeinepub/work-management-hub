@@ -1,188 +1,79 @@
 {
   "kind": "build_request",
-  "title": "Create Service Activation Form Modal with Reactive Calculations",
-  "projectName": "Asistenmu",
-  "priority": "normal",
+  "title": "Fix infinite loading bug and upgrade to searchable dropdowns",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Create a self-contained modal component 'ActivateServiceModal' in frontend/src/components using React State (isOpen, setIsOpen) and Tailwind CSS. Include a semi-transparent black overlay background.",
+      "text": "Fix infinite loading spinner bug in UserManagementPage component (/user-management route) by wrapping all backend data fetch calls in try-catch blocks, ensuring isLoading state is set to false in finally blocks regardless of success or failure, and displaying error messages via toast notifications when data fetching fails",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-10"
         ],
         "quotes": [
-          "Komponen Modal: Buat dari scratch menggunakan React State (isOpen, setIsOpen) dan Tailwind CSS murni",
-          "Pastikan ada overlay latar belakang hitam transparan"
+          "Perbaiki Bug Spinner di halaman `/user-management` (Kelola Pengguna): Saat ini ketika pindah ke halaman Kelola Pengguna, layarnya stuck di loading spinner terus-menerus"
         ]
       },
       "acceptanceCriteria": [
-        "Modal component is self-contained without external UI libraries (no Headless UI/Radix UI)",
-        "Modal uses React state for open/close control",
-        "Semi-transparent black overlay is present behind modal content",
-        "Modal is built with TypeScript and Tailwind CSS"
+        "Loading spinner stops after data fetch completes or fails",
+        "Error messages are displayed to user when backend calls fail",
+        "Page renders properly without white screen or infinite loading states",
+        "All async operations use try-catch-finally pattern with proper loading state management"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add form fields in the modal in this exact order: (1) Select dropdown 'Pilih Client' with mock options 'PT Maju' and 'CV Sejahtera', (2) Select dropdown 'Pilih Asistenmu' with mock options 'Budi' and 'Siti', (3) Select dropdown 'Tipe Layanan' with options: Tenang, Rapi, Fokus, Jaga, Efisien, (4) Number input 'Jumlah Unit Pembelian', (5) Number input 'Harga Jual Per Unit (Rp)'.",
+      "text": "Convert the 'Pilih Client' dropdown in ActivateServiceModal component from standard select to a searchable/autocomplete combobox that allows superadmin to type and filter users by name, while maintaining the user ID (Principal) as the submitted value and displaying the user's name as the visible label",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-10"
         ],
         "quotes": [
-          "Select/Dropdown 'Pilih Client' (Gunakan mock data: PT Maju, CV Sejahtera)",
-          "Select/Dropdown 'Pilih Asistenmu' (Gunakan mock data: Budi, Siti)",
-          "Select/Dropdown 'Tipe Layanan' (Option: Tenang, Rapi, Fokus, Jaga, Efisien)",
-          "Input Number 'Jumlah Unit Pembelian'",
-          "Input Number 'Harga Jual Per Unit (Rp)'"
+          "Upgrade Dropdown di Form \"Aktivasi Layanan Baru\": Komponen dropdown \"Pilih Client\" dan \"Pilih Asistenmu\" saat ini menggunakan dropdown standar yang tidak scalable jika datanya ratusan"
         ]
       },
       "acceptanceCriteria": [
-        "All five form fields appear in the specified order",
-        "Client dropdown contains exactly 'PT Maju' and 'CV Sejahtera'",
-        "Asistenmu dropdown contains exactly 'Budi' and 'Siti'",
-        "Service Type dropdown contains all five options: Tenang, Rapi, Fokus, Jaga, Efisien",
-        "Both number inputs accept numeric values only"
+        "Dropdown allows typing to search/filter users by name",
+        "Selected value submitted to backend is the user ID (Principal), not the name string",
+        "Dropdown displays user names as visible options",
+        "Component uses existing fetched user data without requiring new backend calls",
+        "Search functionality is case-insensitive and filters as user types"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Below the 'Jumlah Unit Pembelian' input, display reactive helper text in gray color showing 'Setara dengan [Jumlah Unit * 2] Jam Efektif' that updates automatically as the user changes the unit quantity.",
+      "text": "Convert the 'Pilih Asistenmu' dropdown in ActivateServiceModal component from standard select to a searchable/autocomplete combobox that allows superadmin to type and filter users by name, while maintaining the user ID (Principal) as the submitted value and displaying the user's name as the visible label",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-10"
         ],
         "quotes": [
-          "UX Magic (Wajib): Buat state reaktif. Tepat di bawah input ini, tampilkan teks bantuan berwarna abu-abu: 'Setara dengan [Jumlah Unit * 2] Jam Efektif'"
+          "Tolong ubah kedua komponen tersebut menjadi \"Searchable Dropdown\" (Autocomplete / Combobox)"
         ]
       },
       "acceptanceCriteria": [
-        "Helper text appears directly below the unit quantity input",
-        "Text color is gray",
-        "Calculation shows unit quantity multiplied by 2",
-        "Text updates in real-time as user types in the unit field"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Below the 'Harga Jual Per Unit' input, display reactive helper text in bold primary color showing 'Total Tagihan (GMV): Rp [Jumlah Unit * Harga Jual]' with thousand separator formatting (e.g., 1.500.000) that updates automatically as the user changes either unit quantity or price.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-latest"
-        ],
-        "quotes": [
-          "UX Magic (Wajib): Buat state reaktif. Tepat di bawah input ini, tampilkan teks bantuan tebal/warna primary: 'Total Tagihan (GMV): Rp [Jumlah Unit * Harga Jual]'. Format angka dengan pemisah ribuan Rupiah"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Helper text appears directly below the price input",
-        "Text is bold and uses primary theme color",
-        "GMV calculation multiplies unit quantity by price per unit",
-        "Numbers display with dot (.) as thousand separator (e.g., 1.500.000)",
-        "Text updates in real-time as user changes unit or price values"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "In the 'Harga Jual Per Unit' input field, automatically format the display value with thousand separators (dots) as the user types (e.g., typing 1500000 shows as 1.500.000), while maintaining the underlying state value as a pure number.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-latest"
-        ],
-        "quotes": [
-          "Tambahan UX: Saat mengetik di field Harga Jual, format otomatis tampilannya menggunakan pemisah ribuan (contoh: 1.500.000) agar Finance tidak pusing menghitung nol, tetapi nilai state aslinya tetap number murni"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Input displays formatted value with dots as thousand separators",
-        "User can type naturally and formatting applies automatically",
-        "Internal state stores the numeric value without formatting",
-        "Formatting updates in real-time as user types"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Implement form validation: all fields are required (cannot be empty), 'Jumlah Unit Pembelian' must be at least 1 (cannot be 0 or negative), 'Harga Jual Per Unit' must be greater than 0. Display validation errors appropriately.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-latest"
-        ],
-        "quotes": [
-          "Semua field wajib diisi (required)",
-          "'Jumlah Unit Pembelian': Minimal angka 1. (Tidak boleh 0 atau minus)",
-          "'Harga Jual Per Unit': Minimal > 0"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Form cannot be submitted if any field is empty",
-        "Unit quantity input rejects values less than 1",
-        "Price input rejects values less than or equal to 0",
-        "Validation errors are displayed to the user",
-        "Submit button is disabled or validation prevents submission when requirements are not met"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "Add two action buttons at the bottom of the modal: (1) 'Batal' button with outline/ghost styling that closes the modal, (2) 'Aktifkan Layanan' button with solid primary styling that includes a TODO comment '// TODO: Panggil fungsi backend Motoko aktifkanLayanan()' in its click handler.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-latest"
-        ],
-        "quotes": [
-          "Tombol 'Batal' (Desain outline/ghost)",
-          "Tombol 'Aktifkan Layanan' (Desain solid primary)",
-          "Berikan komentar pada handler tombol ini: `// TODO: Panggil fungsi backend Motoko aktifkanLayanan()`"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Two buttons are present at the bottom of the modal",
-        "'Batal' button has outline or ghost styling",
-        "'Aktifkan Layanan' button has solid primary styling",
-        "'Batal' button closes the modal when clicked",
-        "'Aktifkan Layanan' handler contains the specified TODO comment",
-        "Buttons are visually distinct and properly styled"
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "text": "Style the modal with a clean, minimalist, professional design using generous spacing between inputs, smooth border-radius, and ensure the overall layout is legible and user-friendly for Finance/Superadmin roles.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-latest"
-        ],
-        "quotes": [
-          "Buat tampilan form di dalam Modal/Card yang clean, minimalis, dan profesional. Berikan margin yang lega antar input, gunakan border-radius yang halus"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Modal has a clean, professional appearance",
-        "Input fields have generous vertical spacing between them",
-        "Border-radius values are smooth and consistent",
-        "Design feels minimalist without being sparse",
-        "Form is easy to read and navigate"
+        "Dropdown allows typing to search/filter users by name",
+        "Selected value submitted to backend is the user ID (Principal), not the name string",
+        "Dropdown displays user names as visible options",
+        "Component uses existing fetched user data without requiring new backend calls",
+        "Search functionality is case-insensitive and filters as user types"
       ]
     }
   ],
   "constraints": [
-    "Do not use external UI component libraries like Headless UI or Radix UI for the modal",
-    "Modal must be built using only React State and Tailwind CSS",
-    "Price input must maintain numeric state internally while displaying formatted text",
-    "All mock data values must match exactly as specified (PT Maju, CV Sejahtera, Budi, Siti, Tenang, Rapi, Fokus, Jaga, Efisien)"
+    "Do not modify or create new backend functions in main.mo",
+    "Use only existing backend functions that are already implemented",
+    "All changes must be frontend-only (UI/UX improvements)",
+    "Maintain existing data structures and API contracts with backend"
   ],
   "nonGoals": [
-    "Implementing the actual backend aktifkanLayanan() function",
-    "Connecting to real client or staff data from the backend",
-    "Adding role-based access control to the modal component itself",
-    "Implementing edit or delete functionality for services"
+    "Creating new backend query functions for user data",
+    "Modifying backend user management logic",
+    "Changing data fetching strategies or API endpoints",
+    "Adding new backend methods for filtering or searching users"
   ],
   "imageRequirements": {
     "required": [],

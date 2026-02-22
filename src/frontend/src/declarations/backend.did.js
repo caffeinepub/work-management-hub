@@ -40,7 +40,37 @@ export const CreateTaskResult = IDL.Variant({
 });
 export const UserProfile = IDL.Record({
   'name' : IDL.Text,
+  'email' : IDL.Opt(IDL.Text),
   'requestedRole' : IDL.Opt(IDL.Text),
+  'phoneNumber' : IDL.Opt(IDL.Text),
+});
+export const Layanan = IDL.Record({
+  'id' : IDL.Text,
+  'status' : IDL.Variant({
+    'active' : IDL.Null,
+    'pendingApproval' : IDL.Null,
+    'dormant' : IDL.Null,
+    'depleted' : IDL.Null,
+  }),
+  'clientId' : IDL.Principal,
+  'harga' : IDL.Nat,
+  'nama' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'deadline' : IDL.Int,
+  'resourceType' : IDL.Variant({
+    'dedicated' : IDL.Null,
+    'standard' : IDL.Null,
+  }),
+  'adminId' : IDL.Principal,
+  'scopeKerja' : IDL.Text,
+  'layananType' : IDL.Variant({
+    'reportWriting' : IDL.Null,
+    'assistance' : IDL.Null,
+    'dataEntry' : IDL.Null,
+  }),
+  'jamOnHold' : IDL.Nat,
+  'saldoOriginal' : IDL.Nat,
+  'saldoJamEfektif' : IDL.Nat,
 });
 export const InternalData = IDL.Record({
   'levelPartner' : IDL.Text,
@@ -64,6 +94,7 @@ export const TaskClientView = IDL.Record({
 export const Status = IDL.Variant({
   'active' : IDL.Null,
   'pending' : IDL.Null,
+  'rejected' : IDL.Null,
 });
 export const Role = IDL.Variant({
   'client' : IDL.Null,
@@ -80,6 +111,8 @@ export const User = IDL.Record({
   'name' : IDL.Text,
   'createdAt' : IDL.Int,
   'role' : Role,
+  'email' : IDL.Opt(IDL.Text),
+  'phoneNumber' : IDL.Opt(IDL.Text),
   'idUser' : IDL.Text,
   'companyBisnis' : IDL.Opt(IDL.Text),
   'principalId' : IDL.Principal,
@@ -158,17 +191,14 @@ export const idlService = IDL.Service({
     ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getClientMainService' : IDL.Func([], [IDL.Opt(Layanan)], ['query']),
   'getClientTasks' : IDL.Func(
       [IDL.Principal],
       [IDL.Vec(TaskClientView)],
       ['query'],
     ),
   'getCurrentUser' : IDL.Func([], [IDL.Opt(User)], ['query']),
-  'getMyLayananAktif' : IDL.Func(
-      [IDL.Principal],
-      [IDL.Vec(LayananClientView)],
-      ['query'],
-    ),
+  'getMyLayananAktif' : IDL.Func([], [IDL.Vec(LayananClientView)], ['query']),
   'getPendingRequests' : IDL.Func([], [IDL.Vec(User)], ['query']),
   'getUserProfile' : IDL.Func([IDL.Principal], [IDL.Opt(User)], ['query']),
   'inputEstimasiAM' : IDL.Func(
@@ -190,15 +220,21 @@ export const idlService = IDL.Service({
   'requestWithdraw' : IDL.Func([IDL.Principal, IDL.Nat], [IDL.Text], []),
   'responPartner' : IDL.Func([IDL.Text, IDL.Bool], [ResponPartnerResult], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'selfRegisterClient' : IDL.Func([IDL.Text, IDL.Text], [], []),
+  'selfRegisterClient' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [],
+      [],
+    ),
   'selfRegisterInternal' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'selfRegisterPartner' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
+  'updateProfile' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
   'updateTaskStatus' : IDL.Func(
       [IDL.Text, TaskStatus],
       [UpdateTaskStatusResult],
       [],
     ),
+  'updateUserRole' : IDL.Func([IDL.Principal, Role], [], []),
 });
 
 export const idlInitArgs = [];
@@ -233,7 +269,37 @@ export const idlFactory = ({ IDL }) => {
   const CreateTaskResult = IDL.Variant({ 'ok' : IDL.Text, 'err' : IDL.Text });
   const UserProfile = IDL.Record({
     'name' : IDL.Text,
+    'email' : IDL.Opt(IDL.Text),
     'requestedRole' : IDL.Opt(IDL.Text),
+    'phoneNumber' : IDL.Opt(IDL.Text),
+  });
+  const Layanan = IDL.Record({
+    'id' : IDL.Text,
+    'status' : IDL.Variant({
+      'active' : IDL.Null,
+      'pendingApproval' : IDL.Null,
+      'dormant' : IDL.Null,
+      'depleted' : IDL.Null,
+    }),
+    'clientId' : IDL.Principal,
+    'harga' : IDL.Nat,
+    'nama' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'deadline' : IDL.Int,
+    'resourceType' : IDL.Variant({
+      'dedicated' : IDL.Null,
+      'standard' : IDL.Null,
+    }),
+    'adminId' : IDL.Principal,
+    'scopeKerja' : IDL.Text,
+    'layananType' : IDL.Variant({
+      'reportWriting' : IDL.Null,
+      'assistance' : IDL.Null,
+      'dataEntry' : IDL.Null,
+    }),
+    'jamOnHold' : IDL.Nat,
+    'saldoOriginal' : IDL.Nat,
+    'saldoJamEfektif' : IDL.Nat,
   });
   const InternalData = IDL.Record({
     'levelPartner' : IDL.Text,
@@ -254,7 +320,11 @@ export const idlFactory = ({ IDL }) => {
     'detailPermintaan' : IDL.Text,
     'layananId' : IDL.Text,
   });
-  const Status = IDL.Variant({ 'active' : IDL.Null, 'pending' : IDL.Null });
+  const Status = IDL.Variant({
+    'active' : IDL.Null,
+    'pending' : IDL.Null,
+    'rejected' : IDL.Null,
+  });
   const Role = IDL.Variant({
     'client' : IDL.Null,
     'admin' : IDL.Null,
@@ -270,6 +340,8 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'createdAt' : IDL.Int,
     'role' : Role,
+    'email' : IDL.Opt(IDL.Text),
+    'phoneNumber' : IDL.Opt(IDL.Text),
     'idUser' : IDL.Text,
     'companyBisnis' : IDL.Opt(IDL.Text),
     'principalId' : IDL.Principal,
@@ -356,17 +428,14 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getClientMainService' : IDL.Func([], [IDL.Opt(Layanan)], ['query']),
     'getClientTasks' : IDL.Func(
         [IDL.Principal],
         [IDL.Vec(TaskClientView)],
         ['query'],
       ),
     'getCurrentUser' : IDL.Func([], [IDL.Opt(User)], ['query']),
-    'getMyLayananAktif' : IDL.Func(
-        [IDL.Principal],
-        [IDL.Vec(LayananClientView)],
-        ['query'],
-      ),
+    'getMyLayananAktif' : IDL.Func([], [IDL.Vec(LayananClientView)], ['query']),
     'getPendingRequests' : IDL.Func([], [IDL.Vec(User)], ['query']),
     'getUserProfile' : IDL.Func([IDL.Principal], [IDL.Opt(User)], ['query']),
     'inputEstimasiAM' : IDL.Func(
@@ -388,15 +457,21 @@ export const idlFactory = ({ IDL }) => {
     'requestWithdraw' : IDL.Func([IDL.Principal, IDL.Nat], [IDL.Text], []),
     'responPartner' : IDL.Func([IDL.Text, IDL.Bool], [ResponPartnerResult], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'selfRegisterClient' : IDL.Func([IDL.Text, IDL.Text], [], []),
+    'selfRegisterClient' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
     'selfRegisterInternal' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'selfRegisterPartner' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
+    'updateProfile' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
     'updateTaskStatus' : IDL.Func(
         [IDL.Text, TaskStatus],
         [UpdateTaskStatusResult],
         [],
       ),
+    'updateUserRole' : IDL.Func([IDL.Principal, Role], [], []),
   });
 };
 

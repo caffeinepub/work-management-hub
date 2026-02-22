@@ -4,6 +4,8 @@ import { useActor } from './useActor';
 interface ClientRegistrationData {
   name: string;
   company: string;
+  phoneNumber: string;
+  email: string;
 }
 
 interface PartnerRegistrationData {
@@ -23,7 +25,7 @@ export function useClientRegistration() {
   return useMutation({
     mutationFn: async (data: ClientRegistrationData) => {
       if (!actor) throw new Error('Actor not available');
-      await actor.selfRegisterClient(data.name, data.company);
+      await actor.selfRegisterClient(data.name, data.company, data.phoneNumber, data.email);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });

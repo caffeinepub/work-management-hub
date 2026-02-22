@@ -2,12 +2,13 @@ import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useCurrentUser } from '../hooks/useQueries';
 import { useActor } from '../hooks/useActor';
 import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, LogOut, CheckCircle, XCircle, Plus } from 'lucide-react';
+import { Loader2, LogOut, CheckCircle, XCircle, Plus, Users } from 'lucide-react';
 import { Role, User } from '../backend';
 import { useState, useEffect } from 'react';
 import ActivateServiceModal from './ActivateServiceModal';
@@ -17,6 +18,7 @@ export default function InternalDashboard() {
   const { data: currentUser, isLoading } = useCurrentUser();
   const { actor } = useActor();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [isLoadingPending, setIsLoadingPending] = useState(false);
@@ -109,6 +111,7 @@ export default function InternalDashboard() {
 
   // Check if user is Finance or Superadmin
   const canActivateService = currentUser?.role === Role.finance || currentUser?.role === Role.superadmin;
+  const canManageUsers = currentUser?.role === Role.superadmin || currentUser?.role === Role.admin;
 
   return (
     <div className="min-h-screen bg-[#FAFBFD]">
@@ -150,15 +153,27 @@ export default function InternalDashboard() {
               <h1 className="text-3xl font-bold text-[#0F172A]">Internal Dashboard</h1>
               <p className="text-[#475569] mt-2">Selamat datang, {currentUser?.name}</p>
             </div>
-            {canActivateService && (
-              <Button
-                onClick={() => setIsModalOpen(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Aktivasi Layanan Baru
-              </Button>
-            )}
+            <div className="flex gap-3">
+              {canManageUsers && (
+                <Button
+                  onClick={() => navigate({ to: '/user-management' })}
+                  variant="outline"
+                  className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Kelola Pengguna
+                </Button>
+              )}
+              {canActivateService && (
+                <Button
+                  onClick={() => setIsModalOpen(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Aktivasi Layanan Baru
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

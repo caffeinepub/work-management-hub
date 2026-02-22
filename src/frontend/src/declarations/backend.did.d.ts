@@ -40,6 +40,28 @@ export interface InternalData {
   'scopeKerja' : string,
   'linkDriveInternal' : string,
 }
+export interface Layanan {
+  'id' : string,
+  'status' : { 'active' : null } |
+    { 'pendingApproval' : null } |
+    { 'dormant' : null } |
+    { 'depleted' : null },
+  'clientId' : Principal,
+  'harga' : bigint,
+  'nama' : string,
+  'createdAt' : bigint,
+  'deadline' : bigint,
+  'resourceType' : { 'dedicated' : null } |
+    { 'standard' : null },
+  'adminId' : Principal,
+  'scopeKerja' : string,
+  'layananType' : { 'reportWriting' : null } |
+    { 'assistance' : null } |
+    { 'dataEntry' : null },
+  'jamOnHold' : bigint,
+  'saldoOriginal' : bigint,
+  'saldoJamEfektif' : bigint,
+}
 export interface LayananClientView {
   'id' : string,
   'status' : string,
@@ -66,7 +88,8 @@ export type Role = { 'client' : null } |
   { 'superadmin' : null } |
   { 'partner' : null };
 export type Status = { 'active' : null } |
-  { 'pending' : null };
+  { 'pending' : null } |
+  { 'rejected' : null };
 export interface TaskClientView {
   'id' : string,
   'status' : string,
@@ -94,6 +117,8 @@ export interface User {
   'name' : string,
   'createdAt' : bigint,
   'role' : Role,
+  'email' : [] | [string],
+  'phoneNumber' : [] | [string],
   'idUser' : string,
   'companyBisnis' : [] | [string],
   'principalId' : Principal,
@@ -105,7 +130,9 @@ export interface UserApprovalInfo {
 }
 export interface UserProfile {
   'name' : string,
+  'email' : [] | [string],
   'requestedRole' : [] | [string],
+  'phoneNumber' : [] | [string],
 }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
@@ -129,9 +156,10 @@ export interface _SERVICE {
   >,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getClientMainService' : ActorMethod<[], [] | [Layanan]>,
   'getClientTasks' : ActorMethod<[Principal], Array<TaskClientView>>,
   'getCurrentUser' : ActorMethod<[], [] | [User]>,
-  'getMyLayananAktif' : ActorMethod<[Principal], Array<LayananClientView>>,
+  'getMyLayananAktif' : ActorMethod<[], Array<LayananClientView>>,
   'getPendingRequests' : ActorMethod<[], Array<User>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [User]>,
   'inputEstimasiAM' : ActorMethod<[string, bigint], InputEstimasiAMResult>,
@@ -145,14 +173,19 @@ export interface _SERVICE {
   'requestWithdraw' : ActorMethod<[Principal, bigint], string>,
   'responPartner' : ActorMethod<[string, boolean], ResponPartnerResult>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'selfRegisterClient' : ActorMethod<[string, string], undefined>,
+  'selfRegisterClient' : ActorMethod<
+    [string, string, string, string],
+    undefined
+  >,
   'selfRegisterInternal' : ActorMethod<[string, string], undefined>,
   'selfRegisterPartner' : ActorMethod<[string, string], undefined>,
   'setApproval' : ActorMethod<[Principal, ApprovalStatus], undefined>,
+  'updateProfile' : ActorMethod<[string, string, string], undefined>,
   'updateTaskStatus' : ActorMethod<
     [string, TaskStatus],
     UpdateTaskStatusResult
   >,
+  'updateUserRole' : ActorMethod<[Principal, Role], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

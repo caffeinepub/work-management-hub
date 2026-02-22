@@ -1,106 +1,43 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "SaaS application 'Asistenku' with ticketing system (backend Motoko on ICP) and service activation UI (React + TypeScript + Tailwind)",
+  "summary": "Superadmin dashboard application with user management system",
   "architectural_notes": [
-    "Backend: Motoko canister on Internet Computer Protocol (ICP) with stable variables at actor level (not module level)",
-    "Frontend: React + TypeScript + Tailwind CSS for UI components",
-    "Ticketing module: Uses Array of Tuples [(Text, Ticket)] for stable storage to avoid 'stable variable cannot be an object type' error",
-    "Service activation: Self-contained modal component without external UI libraries (Headless UI/Radix UI)",
-    "Role-based access: Finance/Superadmin for service activation, Concierge for ticket creation (validation TODO)",
-    "Ticket ID format: TCK-{counter} with auto-increment ticketCounter",
-    "Service types: Tenang, Rapi, Fokus, Jaga, Efisien (each unit = 2 effective hours)",
-    "Price formatting: Display with thousand separators (Rupiah format), store as raw number in state"
+    "Frontend uses try-catch-finally pattern for all backend API calls to handle errors gracefully",
+    "Loading states (isLoading) must be set to false in finally blocks to prevent infinite spinners",
+    "Searchable dropdowns (autocomplete/combobox) used for user selection forms to handle large datasets",
+    "User selection dropdowns display names for search but submit user IDs as values"
   ],
-  "known_issues": [
-    "AI repeatedly failed to generate Motoko ticketing module code (multiple attempts resulted in errors)",
-    "Stable variable restrictions in Motoko: must be at actor level, not inside module wrapper",
-    "isConcierge validation for createTicket function not yet implemented (TODO comment added)",
-    "Backend function aktifkanLayanan() not yet implemented (TODO comment in frontend modal)",
-    "Mock data used for Client/Asistenmu dropdowns (PT Maju, CV Sejahtera, Budi, Siti) - needs backend integration"
-  ],
-  "isFixRequest": false,
+  "known_issues": [],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-create-a-self-contained-modal-component-activateservicemodal-in-frontend-src-components-using-react-state-isopen-setisopen-and-tailwind-css-include-a-semi-transparent-black-overlay-background",
-      "title": "Create a self-contained modal component 'ActivateServiceModal' in frontend/src/components using React State (isOpen, setIsOpen) and Tailwind CSS. Include a semi-transparent black overlay background.",
+      "id": "feature-fix-infinite-loading-spinner-bug-in-usermanagementpage-component-user-management-route-by-wrapping-all-backend-data-fetch-calls-in-try-catch-blocks-ensuring-isloading-state-is-set-to-false-in-finally-blocks-regardless-of-success-or-failure-and-displaying-error-messages-via-toast-notifications-when-data-fetching-fails",
+      "title": "Fix infinite loading spinner bug in UserManagementPage component (/user-management route) by wrapping all backend data fetch calls in try-catch blocks, ensuring isLoading state is set to false in finally blocks regardless of success or failure, and displaying error messages via toast notifications when data fetching fails",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-form-fields-in-the-modal-in-this-exact-order-1-select-dropdown-pilih-client-with-mock-options-pt-maju-and-cv-sejahtera-2-select-dropdown-pilih-asistenmu-with-mock-options-budi-and-siti-3-select-dropdown-tipe-layanan-with-options-tenang-rapi-fokus-jaga-efisien-4-number-input-jumlah-unit-pembelian-5-number-input-harga-jual-per-unit-rp",
-      "title": "Add form fields in the modal in this exact order: (1) Select dropdown 'Pilih Client' with mock options 'PT Maju' and 'CV Sejahtera', (2) Select dropdown 'Pilih Asistenmu' with mock options 'Budi' and 'Siti', (3) Select dropdown 'Tipe Layanan' with options: Tenang, Rapi, Fokus, Jaga, Efisien, (4) Number input 'Jumlah Unit Pembelian', (5) Number input 'Harga Jual Per Unit (Rp)'.",
+      "id": "feature-convert-the-pilih-client-dropdown-in-activateservicemodal-component-from-standard-select-to-a-searchable-autocomplete-combobox-that-allows-superadmin-to-type-and-filter-users-by-name-while-maintaining-the-user-id-principal-as-the-submitted-value-and-displaying-the-user-s-name-as-the-visible-label",
+      "title": "Convert the 'Pilih Client' dropdown in ActivateServiceModal component from standard select to a searchable/autocomplete combobox that allows superadmin to type and filter users by name, while maintaining the user ID (Principal) as the submitted value and displaying the user's name as the visible label",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-below-the-jumlah-unit-pembelian-input-display-reactive-helper-text-in-gray-color-showing-setara-dengan-jumlah-unit-2-jam-efektif-that-updates-automatically-as-the-user-changes-the-unit-quantity",
-      "title": "Below the 'Jumlah Unit Pembelian' input, display reactive helper text in gray color showing 'Setara dengan [Jumlah Unit * 2] Jam Efektif' that updates automatically as the user changes the unit quantity.",
+      "id": "feature-convert-the-pilih-asistenmu-dropdown-in-activateservicemodal-component-from-standard-select-to-a-searchable-autocomplete-combobox-that-allows-superadmin-to-type-and-filter-users-by-name-while-maintaining-the-user-id-principal-as-the-submitted-value-and-displaying-the-user-s-name-as-the-visible-label",
+      "title": "Convert the 'Pilih Asistenmu' dropdown in ActivateServiceModal component from standard select to a searchable/autocomplete combobox that allows superadmin to type and filter users by name, while maintaining the user ID (Principal) as the submitted value and displaying the user's name as the visible label",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
-    },
-    {
-      "id": "feature-below-the-harga-jual-per-unit-input-display-reactive-helper-text-in-bold-primary-color-showing-total-tagihan-gmv-rp-jumlah-unit-harga-jual-with-thousand-separator-formatting-e-g-1-500-000-that-updates-automatically-as-the-user-changes-either-unit-quantity-or-price",
-      "title": "Below the 'Harga Jual Per Unit' input, display reactive helper text in bold primary color showing 'Total Tagihan (GMV): Rp [Jumlah Unit * Harga Jual]' with thousand separator formatting (e.g., 1.500.000) that updates automatically as the user changes either unit quantity or price.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-in-the-harga-jual-per-unit-input-field-automatically-format-the-display-value-with-thousand-separators-dots-as-the-user-types-e-g-typing-1500000-shows-as-1-500-000-while-maintaining-the-underlying-state-value-as-a-pure-number",
-      "title": "In the 'Harga Jual Per Unit' input field, automatically format the display value with thousand separators (dots) as the user types (e.g., typing 1500000 shows as 1.500.000), while maintaining the underlying state value as a pure number.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-form-validation-all-fields-are-required-cannot-be-empty-jumlah-unit-pembelian-must-be-at-least-1-cannot-be-0-or-negative-harga-jual-per-unit-must-be-greater-than-0-display-validation-errors-appropriately",
-      "title": "Implement form validation: all fields are required (cannot be empty), 'Jumlah Unit Pembelian' must be at least 1 (cannot be 0 or negative), 'Harga Jual Per Unit' must be greater than 0. Display validation errors appropriately.",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-two-action-buttons-at-the-bottom-of-the-modal-1-batal-button-with-outline-ghost-styling-that-closes-the-modal-2-aktifkan-layanan-button-with-solid-primary-styling-that-includes-a-todo-comment-todo-panggil-fungsi-backend-motoko-aktifkanlayanan-in-its-click-handler",
-      "title": "Add two action buttons at the bottom of the modal: (1) 'Batal' button with outline/ghost styling that closes the modal, (2) 'Aktifkan Layanan' button with solid primary styling that includes a TODO comment '// TODO: Panggil fungsi backend Motoko aktifkanLayanan()' in its click handler.",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-style-the-modal-with-a-clean-minimalist-professional-design-using-generous-spacing-between-inputs-smooth-border-radius-and-ensure-the-overall-layout-is-legible-and-user-friendly-for-finance-superadmin-roles",
-      "title": "Style the modal with a clean, minimalist, professional design using generous spacing between inputs, smooth border-radius, and ensure the overall layout is legible and user-friendly for Finance/Superadmin roles.",
-      "reqIds": [
-        "REQ-8"
-      ],
-      "version": 1
     }
   ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Ticketing system backend module (Motoko ICP) with createTicket function, stable storage using Array of Tuples, and types for Role/Status/Priority",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Service Activation Form Modal UI for Finance/Superadmin role with reactive calculations (total hours, GMV), thousand separator formatting, and validation (all fields required, unit >= 1, price > 0)",
-      "reqIds": [],
-      "status": "pending"
-    }
-  ],
-  "projectName": "Asistenku",
+  "new_feature_requests": [],
+  "projectName": "Fix infinite loading bug and upgrade to searchable dropdowns",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -17,6 +17,8 @@ export default function ClientRegisterPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
   const { mutate: register, isPending, isSuccess, error } = useClientRegistration();
 
   const isAuthenticated = !!identity;
@@ -32,8 +34,13 @@ export default function ClientRegisterPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim() && company.trim()) {
-      register({ name: name.trim(), company: company.trim() });
+    if (name.trim() && company.trim() && phoneNumber.trim() && email.trim()) {
+      register({ 
+        name: name.trim(), 
+        company: company.trim(),
+        phoneNumber: phoneNumber.trim(),
+        email: email.trim()
+      });
     }
   };
 
@@ -174,13 +181,43 @@ export default function ClientRegisterPage() {
                       />
                     </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="phoneNumber">Nomor Telepon</Label>
+                      <Input
+                        id="phoneNumber"
+                        type="tel"
+                        placeholder="Masukkan nomor telepon"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        required
+                        disabled={isPending}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Masukkan email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        disabled={isPending}
+                      />
+                    </div>
+
                     {error && (
                       <Alert variant="destructive">
                         <AlertDescription>{error.message}</AlertDescription>
                       </Alert>
                     )}
 
-                    <Button type="submit" className="w-full" disabled={isPending || !name.trim() || !company.trim()}>
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      disabled={isPending || !name.trim() || !company.trim() || !phoneNumber.trim() || !email.trim()}
+                    >
                       {isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

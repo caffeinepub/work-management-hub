@@ -11,6 +11,7 @@ import InternalDashboard from './components/InternalDashboard';
 import ApprovedUserView from './components/ApprovedUserView';
 import SuperadminClaimPage from './components/SuperadminClaimPage';
 import UserInfoPage from './components/UserInfoPage';
+import UserManagementPage from './components/UserManagementPage';
 import { Loader2 } from 'lucide-react';
 import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
 import { Toaster } from '@/components/ui/sonner';
@@ -173,6 +174,13 @@ const internalDashboardRoute = createRoute({
   component: InternalDashboard,
 });
 
+// Create user management route
+const userManagementRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/user-management',
+  component: UserManagementPage,
+});
+
 // Create router
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -183,6 +191,7 @@ const routeTree = rootRoute.addChildren([
   partnerDashboardRoute,
   clientDashboardRoute,
   internalDashboardRoute,
+  userManagementRoute,
 ]);
 
 const router = createRouter({ routeTree });
