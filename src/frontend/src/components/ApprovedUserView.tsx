@@ -24,7 +24,7 @@ export default function ApprovedUserView() {
     );
   }
 
-  // Check if user is admin
+  // Check if user is admin (includes both admin and superadmin roles)
   const isAdmin = userRole === UserRole.admin;
 
   // If admin, show admin dashboard

@@ -109,8 +109,8 @@ export default function InternalDashboard() {
     }
   };
 
-  // Check if user is Finance or Superadmin
-  const canActivateService = currentUser?.role === Role.finance || currentUser?.role === Role.superadmin;
+  // Check if user is Finance or Superadmin or Admin
+  const canActivateService = currentUser?.role === Role.finance || currentUser?.role === Role.superadmin || currentUser?.role === Role.admin;
   const canManageUsers = currentUser?.role === Role.superadmin || currentUser?.role === Role.admin;
 
   return (
@@ -134,7 +134,7 @@ export default function InternalDashboard() {
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-2 py-2">
                 <p className="text-sm font-medium">{currentUser?.name}</p>
-                <p className="text-xs text-muted-foreground">{currentUser && getRoleLabel(currentUser.role)}</p>
+                <p className="text-xs text-muted-foreground">{getRoleLabel(currentUser?.role || Role.admin)}</p>
               </div>
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
@@ -148,141 +148,122 @@ export default function InternalDashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="space-y-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-[#0F172A]">Internal Dashboard</h1>
-              <p className="text-[#475569] mt-2">Selamat datang, {currentUser?.name}</p>
-            </div>
-            <div className="flex gap-3">
-              {canManageUsers && (
-                <Button
-                  onClick={() => navigate({ to: '/user-management' })}
-                  variant="outline"
-                  className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white"
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Kelola Pengguna
-                </Button>
-              )}
-              {canActivateService && (
-                <Button
-                  onClick={() => setIsModalOpen(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
+          {/* Welcome Section */}
+          <div>
+            <h1 className="text-3xl font-bold text-[#0F172A]">Internal Dashboard</h1>
+            <p className="text-[#475569] mt-2">Selamat datang, {currentUser?.name}</p>
+          </div>
+
+          {/* Profile Card */}
+          <Card className="shadow-gold">
+            <CardHeader>
+              <CardTitle>Profil Anda</CardTitle>
+              <CardDescription>Informasi akun internal</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Nama:</span>
+                  <span className="text-sm font-medium">{currentUser?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Role:</span>
+                  <span className="text-sm font-medium">{getRoleLabel(currentUser?.role || Role.admin)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Status:</span>
+                  <span className="text-sm font-medium text-green-600">Active</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Admin Panel - Only for Superadmin and Admin */}
+          {canManageUsers && (
+            <Card className="shadow-gold">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Admin Panel</CardTitle>
+                    <CardDescription>Kelola registrasi dan user</CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => navigate({ to: '/user-management' })}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <Users className="h-4 w-4" />
+                    Kelola Pengguna
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Pending Registrations</h3>
+                    {isLoadingPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  </div>
+
+                  {pendingUsers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Tidak ada registrasi pending</p>
+                  ) : (
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Nama</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Tanggal</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {pendingUsers.map((user) => (
+                            <TableRow key={user.principalId.toString()}>
+                              <TableCell className="font-medium">{user.name}</TableCell>
+                              <TableCell>{getRoleLabel(user.role)}</TableCell>
+                              <TableCell>{new Date(Number(user.createdAt) / 1000000).toLocaleDateString()}</TableCell>
+                              <TableCell className="text-right space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleApprove(user.principalId)}
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleReject(user.principalId)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Finance Panel - Only for Finance, Superadmin, and Admin */}
+          {canActivateService && (
+            <Card className="shadow-gold">
+              <CardHeader>
+                <CardTitle>Finance Panel</CardTitle>
+                <CardDescription>Aktivasi layanan baru untuk client</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
                   Aktivasi Layanan Baru
                 </Button>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profil Internal</CardTitle>
-                <CardDescription>Informasi akun Anda</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">ID User</p>
-                  <p className="font-medium">{currentUser?.idUser}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Nama</p>
-                  <p className="font-medium">{currentUser?.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Role</p>
-                  <p className="font-medium">{currentUser && getRoleLabel(currentUser.role)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <p className="font-medium capitalize">{currentUser?.status}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Tugas Hari Ini</CardTitle>
-                <CardDescription>Tugas yang perlu diselesaikan</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-center h-24">
-                  <p className="text-muted-foreground">Belum ada tugas</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Notifikasi</CardTitle>
-                <CardDescription>Pemberitahuan terbaru</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-center h-24">
-                  <p className="text-muted-foreground">Tidak ada notifikasi</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Admin-specific features */}
-          {(currentUser?.role === Role.superadmin || currentUser?.role === Role.admin) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Admin Panel</CardTitle>
-                <CardDescription>Kelola pengguna dan sistem</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoadingPending ? (
-                  <div className="flex items-center justify-center h-24">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  </div>
-                ) : pendingUsers.length === 0 ? (
-                  <div className="flex items-center justify-center h-24">
-                    <p className="text-muted-foreground">Tidak ada permintaan pendaftaran baru</p>
-                  </div>
-                ) : (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nama</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead className="text-right">Action</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pendingUsers.map((user) => (
-                          <TableRow key={user.principalId.toString()}>
-                            <TableCell className="font-medium">{user.name}</TableCell>
-                            <TableCell>{getRoleLabel(user.role)}</TableCell>
-                            <TableCell className="text-right space-x-2">
-                              <Button
-                                size="sm"
-                                variant="default"
-                                className="bg-green-600 hover:bg-green-700"
-                                onClick={() => handleApprove(user.principalId)}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleReject(user.principalId)}
-                              >
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Reject
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
               </CardContent>
             </Card>
           )}
@@ -290,10 +271,7 @@ export default function InternalDashboard() {
       </main>
 
       {/* Activate Service Modal */}
-      <ActivateServiceModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-      />
+      <ActivateServiceModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }

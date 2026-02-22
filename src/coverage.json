@@ -1,46 +1,86 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-22T18:32:50.626Z",
+  "generatedAt": "2026-02-22T22:48:52.393Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 6,
+    "implemented": 6,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix infinite loading spinner bug in UserManagementPage component (/user-management route) by wrapping all backend data fetch calls in try-catch blocks, ensuring isLoading state is set to false in finally blocks regardless of success or failure, and displaying error messages via toast notifications when data fetching fails",
+        "summary": "In UserManagementPage.tsx and UserManagementTable.tsx, ensure the requestedRole field is properly fetched from the backend and mapped to the UI. Transform lowercase string values from backend ('client', 'asistenmu', 'admin') to Title Case labels ('Client', 'Asistenmu', 'Admin') for display in the Role column of the pending users table.",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/components/UserManagementTable.tsx",
           "frontend/src/components/UserManagementPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/UserManagementPage.tsx"
+          "frontend/src/components/UserManagementTable.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Convert the 'Pilih Client' dropdown in ActivateServiceModal component from standard select to a searchable/autocomplete combobox that allows superadmin to type and filter users by name, while maintaining the user ID (Principal) as the submitted value and displaying the user's name as the visible label",
+        "summary": "Update the Approve button in UserManagementTable.tsx to send the principalId parameter to the backend approveUser function with requestedRole as a lowercase string ('admin', 'client', 'asistenmu'). Add a loading spinner to the Approve button to indicate the blockchain transaction is in progress.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
+          "frontend/src/components/UserManagementTable.tsx",
+          "frontend/src/hooks/useApprovalManagement.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
+          "frontend/src/components/UserManagementTable.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Convert the 'Pilih Asistenmu' dropdown in ActivateServiceModal component from standard select to a searchable/autocomplete combobox that allows superadmin to type and filter users by name, while maintaining the user ID (Principal) as the submitted value and displaying the user's name as the visible label",
+        "summary": "In UserManagementTable.tsx, update the user detail columns to display: Name (user.name), Business (user.companyBisnis), City (user.kotaDomisili), WhatsApp (user.phoneNumber), Requested Role (user.requestedRole transformed to Title Case), and Principal ID (user.principalId.toText() with monospace font and small size).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
+          "frontend/src/components/UserManagementTable.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/ActivateServiceModal.tsx"
+          "frontend/src/components/UserManagementTable.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "In ClientDashboard.tsx, integrate with the getCurrentUser() backend function to fetch and display the user's name in the welcome greeting. If the name is empty or unavailable, use 'Client' as fallback text.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/ClientDashboard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/ClientDashboard.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "In ClientDashboard.tsx, implement task metrics by fetching data from getClientTasks() backend function and counting tasks by status on the frontend. Display three metric cards: 'Task Meminta Review Kamu' (count tasks with status 'Client Review'), 'Task Sedang Dikerjakan' (count tasks with status 'Sedang Dikerjakan'), and 'Task Selesai' (count tasks with status 'Completed'). Show 0 as fallback if data is empty.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ClientDashboard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ClientDashboard.tsx"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Ensure all updated components (UserManagementPage, UserManagementTable, ClientDashboard) maintain the Boutique theme with bg-[#FDFCFB] background, thin gold shadows, and Midnight Slate text colors as defined in the existing design system.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/UserManagementPage.tsx",
+          "frontend/src/components/UserManagementTable.tsx",
+          "frontend/src/components/ClientDashboard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/UserManagementTable.tsx",
+          "frontend/src/components/ClientDashboard.tsx"
         ]
       }
     ]
@@ -50,8 +90,8 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/ActivateServiceModal.tsx",
-    "frontend/src/components/UserManagementPage.tsx",
+    "frontend/src/components/ClientDashboard.tsx",
+    "frontend/src/components/UserManagementTable.tsx",
     "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",

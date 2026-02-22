@@ -5,10 +5,11 @@ import { useNavigate } from '@tanstack/react-router';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Loader2, LogOut, ChevronDown, ChevronUp, RefreshCw, Users, Briefcase, Building2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Loader2, LogOut, RefreshCw, Users, Briefcase, Building2, UserCheck, Search } from 'lucide-react';
 import { Role, Status, User } from '../backend';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useActor } from '../hooks/useActor';
 import { useQuery } from '@tanstack/react-query';
 import UserManagementTable from './UserManagementTable';
@@ -22,18 +23,38 @@ export default function UserManagementPage() {
   const navigate = useNavigate();
   const { actor, isFetching: actorFetching } = useActor();
 
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    internal: true,
-    asistenmu: false,
-    clientPartner: false,
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch pending users directly from getPendingRequests (same as Dashboard)
+  const { 
+    data: pendingUsersData = [], 
+    isLoading: pendingLoading, 
+    isFetching: pendingFetching, 
+    refetch: refetchPending,
+    error: pendingError 
+  } = useQuery<User[]>({
+    queryKey: ['pendingRequests'],
+    queryFn: async () => {
+      try {
+        if (!actor) throw new Error('Actor not available');
+        return actor.getPendingRequests();
+      } catch (error: any) {
+        console.error('Error fetching pending users:', error);
+        toast.error(`Failed to fetch pending users: ${error.message || 'Unknown error'}`);
+        throw error;
+      }
+    },
+    enabled: !!actor && !actorFetching,
+    retry: 2,
+    retryDelay: 1000,
   });
 
-  // Fetch all users with proper error handling
+  // Fetch all users from listApprovals for active users
   const { 
     data: allUsers = [], 
     isLoading: usersLoading, 
     isFetching: usersFetching, 
-    refetch,
+    refetch: refetchAll,
     error: usersError 
   } = useQuery<User[]>({
     queryKey: ['allUsers'],
@@ -55,26 +76,77 @@ export default function UserManagementPage() {
     retryDelay: 1000,
   });
 
+  // Combine pending users with all users for complete dataset
+  const combinedUsers = useMemo(() => {
+    const allUserMap = new Map(allUsers.map(u => [u.principalId.toString(), u]));
+    const pendingUserMap = new Map(pendingUsersData.map(u => [u.principalId.toString(), u]));
+    
+    // Merge: pending users override any duplicates from allUsers
+    pendingUsersData.forEach(u => allUserMap.set(u.principalId.toString(), u));
+    
+    return Array.from(allUserMap.values());
+  }, [allUsers, pendingUsersData]);
+
+  // Filter users by search query (case-insensitive, search by name or ID)
+  // MUST be called before any conditional returns
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return combinedUsers;
+    
+    const query = searchQuery.toLowerCase();
+    return combinedUsers.filter(user => 
+      user.name.toLowerCase().includes(query) || 
+      user.idUser.toLowerCase().includes(query)
+    );
+  }, [combinedUsers, searchQuery]);
+
+  // Filter users into 4 categories - use direct data from pendingUsersData for pending
+  const pendingUsers = useMemo(() => 
+    searchQuery.trim() 
+      ? filteredUsers.filter(u => u.status === Status.pending)
+      : pendingUsersData,
+    [filteredUsers, pendingUsersData, searchQuery]
+  );
+
+  const internalActiveUsers = useMemo(() => 
+    filteredUsers.filter(u => 
+      u.status === Status.active && 
+      [Role.superadmin, Role.admin, Role.finance, Role.concierge, Role.asistenmu].includes(u.role)
+    ),
+    [filteredUsers]
+  );
+
+  const partnerActiveUsers = useMemo(() => 
+    filteredUsers.filter(u => 
+      u.status === Status.active && 
+      [Role.partner, Role.strategicPartner].includes(u.role)
+    ),
+    [filteredUsers]
+  );
+
+  const clientActiveUsers = useMemo(() => 
+    filteredUsers.filter(u => 
+      u.status === Status.active && 
+      u.role === Role.client
+    ),
+    [filteredUsers]
+  );
+
   const handleLogout = async () => {
     await clear();
     queryClient.clear();
     window.location.href = '/';
   };
 
-  const handleRefresh = async (section: string) => {
+  const handleRefresh = async () => {
     try {
-      await refetch();
+      await Promise.all([refetchPending(), refetchAll()]);
       toast.success('Data refreshed successfully');
     } catch (error: any) {
       toast.error(`Failed to refresh: ${error.message || 'Unknown error'}`);
     }
   };
 
-  const toggleSection = (section: string) => {
-    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
-  };
-
-  if (isLoading || usersLoading) {
+  if (isLoading || usersLoading || pendingLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -83,19 +155,19 @@ export default function UserManagementPage() {
   }
 
   // Show error state if data fetch failed
-  if (usersError) {
+  if (usersError || pendingError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground mb-2">Error Loading Data</h2>
           <p className="text-muted-foreground mb-4">Failed to load user data. Please try again.</p>
-          <Button onClick={() => refetch()}>Retry</Button>
+          <Button onClick={handleRefresh}>Retry</Button>
         </div>
       </div>
     );
   }
 
-  // Authorization check
+  // Authorization check - Allow both Superadmin and Admin
   if (!currentUser || (currentUser.role !== Role.superadmin && currentUser.role !== Role.admin)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -114,17 +186,6 @@ export default function UserManagementPage() {
     .join('')
     .toUpperCase()
     .slice(0, 2) || 'AD';
-
-  // Filter users by role groups
-  const internalUsers = allUsers.filter(u => 
-    [Role.admin, Role.superadmin, Role.finance, Role.concierge].includes(u.role)
-  );
-
-  const asistenmuUsers = allUsers.filter(u => u.role === Role.asistenmu);
-
-  const clientPartnerUsers = allUsers.filter(u => 
-    [Role.client, Role.partner, Role.strategicPartner].includes(u.role)
-  );
 
   return (
     <div className="min-h-screen bg-[#FAFBFD]">
@@ -166,156 +227,158 @@ export default function UserManagementPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold text-[#0F172A]">Kelola Pengguna</h1>
-            <p className="text-[#475569] mt-2">Manajemen user berdasarkan role dan status</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-[#0F172A]">Kelola Pengguna</h1>
+              <p className="text-[#475569] mt-2">Manajemen user berdasarkan role dan status</p>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleRefresh}
+                    className="text-[#E5D5C0] hover:text-[#D4AF37] hover:scale-110 transition-all"
+                  >
+                    <RefreshCw className={`h-5 w-5 ${(usersFetching || pendingFetching) ? 'animate-spin' : ''}`} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Refresh semua data</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
-          {/* Tim Internal Section */}
-          <TooltipProvider>
-            <Collapsible
-              open={openSections.internal}
-              onOpenChange={() => toggleSection('internal')}
-              className="bg-white rounded-lg shadow-gold border border-border transition-all duration-300"
-            >
-              <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors rounded-t-lg">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div className="text-left">
-                    <h2 className="text-xl font-semibold text-foreground">🟢 Tim Internal</h2>
-                    <p className="text-sm text-muted-foreground">Admin, Superadmin, Finance, Concierge</p>
-                  </div>
-                  <span className="ml-4 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                    {internalUsers.length}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRefresh('internal');
-                        }}
-                        className="text-[#E5D5C0] hover:text-[#D4AF37] hover:scale-110 transition-all"
-                      >
-                        <RefreshCw className={`h-5 w-5 ${usersFetching ? 'animate-spin' : ''}`} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Refresh daftar Tim Internal</TooltipContent>
-                  </Tooltip>
-                  {openSections.internal ? (
-                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="px-6 pb-6">
-                <UserManagementTable users={internalUsers} />
-              </CollapsibleContent>
-            </Collapsible>
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Cari berdasarkan Nama atau ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 w-full max-w-md"
+            />
+          </div>
 
-            {/* Tim Asistenmu Section */}
-            <Collapsible
-              open={openSections.asistenmu}
-              onOpenChange={() => toggleSection('asistenmu')}
-              className="bg-white rounded-lg shadow-gold border border-border transition-all duration-300"
-            >
-              <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors rounded-t-lg">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Briefcase className="h-5 w-5 text-blue-600" />
+          {/* 4 Category Cards */}
+          <div className="grid grid-cols-1 gap-6">
+            {/* Card 1: User Pending */}
+            <Card className="shadow-gold border border-border">
+              <CardHeader className="bg-yellow-50 border-b border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                      <UserCheck className="h-5 w-5 text-yellow-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl font-semibold text-foreground">
+                        🟡 User Pending
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">Menunggu persetujuan (semua role)</p>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <h2 className="text-xl font-semibold text-foreground">🔵 Tim Asistenku</h2>
-                    <p className="text-sm text-muted-foreground">Asistenmu / Account Manager</p>
-                  </div>
-                  <span className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                    {asistenmuUsers.length}
+                  <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
+                    {pendingUsers.length}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRefresh('asistenmu');
-                        }}
-                        className="text-[#E5D5C0] hover:text-[#D4AF37] hover:scale-110 transition-all"
-                      >
-                        <RefreshCw className={`h-5 w-5 ${usersFetching ? 'animate-spin' : ''}`} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Refresh daftar Tim Asistenku</TooltipContent>
-                  </Tooltip>
-                  {openSections.asistenmu ? (
-                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="px-6 pb-6">
-                <UserManagementTable users={asistenmuUsers} />
-              </CollapsibleContent>
-            </Collapsible>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {pendingUsers.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Tidak ada user pending</p>
+                ) : (
+                  <UserManagementTable users={pendingUsers} />
+                )}
+              </CardContent>
+            </Card>
 
-            {/* Client & Partner Section */}
-            <Collapsible
-              open={openSections.clientPartner}
-              onOpenChange={() => toggleSection('clientPartner')}
-              className="bg-white rounded-lg shadow-gold border border-border transition-all duration-300"
-            >
-              <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors rounded-t-lg">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
-                    <Building2 className="h-5 w-5 text-orange-600" />
+            {/* Card 2: Tim Internal Aktif */}
+            <Card className="shadow-gold border border-border">
+              <CardHeader className="bg-green-50 border-b border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl font-semibold text-foreground">
+                        🟢 Tim Internal Aktif
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">Superadmin, Admin, Finance, Concierge, Asistenmu</p>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <h2 className="text-xl font-semibold text-foreground">🟠 Daftar Client & Partner</h2>
-                    <p className="text-sm text-muted-foreground">Client, Partner, Strategic Partner</p>
-                  </div>
-                  <span className="ml-4 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
-                    {clientPartnerUsers.length}
+                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                    {internalActiveUsers.length}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRefresh('clientPartner');
-                        }}
-                        className="text-[#E5D5C0] hover:text-[#D4AF37] hover:scale-110 transition-all"
-                      >
-                        <RefreshCw className={`h-5 w-5 ${usersFetching ? 'animate-spin' : ''}`} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Refresh daftar Client & Partner</TooltipContent>
-                  </Tooltip>
-                  {openSections.clientPartner ? (
-                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                  )}
+              </CardHeader>
+              <CardContent className="pt-6">
+                {internalActiveUsers.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Tidak ada tim internal aktif</p>
+                ) : (
+                  <UserManagementTable users={internalActiveUsers} />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Card 3: Partner Aktif */}
+            <Card className="shadow-gold border border-border">
+              <CardHeader className="bg-blue-50 border-b border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <Briefcase className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl font-semibold text-foreground">
+                        🔵 Partner Aktif
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">Partner, Strategic Partner</p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                    {partnerActiveUsers.length}
+                  </span>
                 </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="px-6 pb-6">
-                <UserManagementTable users={clientPartnerUsers} />
-              </CollapsibleContent>
-            </Collapsible>
-          </TooltipProvider>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {partnerActiveUsers.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Tidak ada partner aktif</p>
+                ) : (
+                  <UserManagementTable users={partnerActiveUsers} />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Card 4: Client Aktif */}
+            <Card className="shadow-gold border border-border">
+              <CardHeader className="bg-orange-50 border-b border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl font-semibold text-foreground">
+                        🟠 Client Aktif
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">Client</p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
+                    {clientActiveUsers.length}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {clientActiveUsers.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Tidak ada client aktif</p>
+                ) : (
+                  <UserManagementTable users={clientActiveUsers} />
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
     </div>

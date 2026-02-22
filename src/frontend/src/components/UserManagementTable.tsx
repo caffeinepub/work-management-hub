@@ -8,9 +8,42 @@ import { useActor } from '../hooks/useActor';
 import { useQueryClient } from '@tanstack/react-query';
 import RoleBadge from './RoleBadge';
 import EditRoleModal from './EditRoleModal';
+import { Badge } from '@/components/ui/badge';
 
 interface UserManagementTableProps {
   users: User[];
+}
+
+// Helper function to transform requestedRole from lowercase to Title Case
+function transformRoleLabel(role: string | undefined | null): string {
+  if (!role) return 'Unknown';
+  
+  const roleMap: Record<string, string> = {
+    'client': 'Client',
+    'asistenmu': 'Asistenmu',
+    'admin': 'Admin',
+    'superadmin': 'Superadmin',
+    'finance': 'Finance',
+    'concierge': 'Concierge',
+    'strategicpartner': 'Strategic Partner',
+    'partner': 'Partner',
+  };
+  
+  return roleMap[role.toLowerCase()] || role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+// Helper function to get status badge
+function getStatusBadge(status: Status) {
+  switch (status) {
+    case Status.active:
+      return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Active</Badge>;
+    case Status.pending:
+      return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending</Badge>;
+    case Status.rejected:
+      return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Rejected</Badge>;
+    default:
+      return <Badge variant="outline">Unknown</Badge>;
+  }
 }
 
 export default function UserManagementTable({ users }: UserManagementTableProps) {
@@ -29,9 +62,16 @@ export default function UserManagementTable({ users }: UserManagementTableProps)
     setLoadingActions(prev => ({ ...prev, [key]: true }));
     try {
       if (!actor) throw new Error('Actor not available');
+      
+      // Call approveUser with principalId
       await actor.approveUser(user.principalId);
+      
       toast.success(`${user.name} has been approved!`);
-      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+      
+      // Invalidate all three query keys to refresh UI
+      await queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+      await queryClient.invalidateQueries({ queryKey: ['approvals'] });
+      await queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
     } catch (error: any) {
       toast.error(`Failed to approve: ${error.message}`);
     } finally {
@@ -44,9 +84,15 @@ export default function UserManagementTable({ users }: UserManagementTableProps)
     setLoadingActions(prev => ({ ...prev, [key]: true }));
     try {
       if (!actor) throw new Error('Actor not available');
+      
       await actor.rejectUser(user.principalId);
+      
       toast.success(`${user.name} has been rejected.`);
-      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+      
+      // Invalidate all three query keys to refresh UI
+      await queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+      await queryClient.invalidateQueries({ queryKey: ['approvals'] });
+      await queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
     } catch (error: any) {
       toast.error(`Failed to reject: ${error.message}`);
     } finally {
@@ -54,51 +100,20 @@ export default function UserManagementTable({ users }: UserManagementTableProps)
     }
   };
 
-  const getStatusBadge = (status: Status) => {
-    switch (status) {
-      case Status.active:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            Active
-          </span>
-        );
-      case Status.pending:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            Pending
-          </span>
-        );
-      case Status.rejected:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            Rejected
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
-
-  if (users.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        No users in this category
-      </div>
-    );
-  }
-
   return (
     <>
-      <div className="rounded-md border border-border overflow-hidden">
+      <div className="rounded-md border border-[#E5D5C0] overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="font-semibold">Nama Lengkap / Perusahaan</TableHead>
-              <TableHead className="font-semibold">Principal ID</TableHead>
-              <TableHead className="font-semibold">Email & WhatsApp</TableHead>
-              <TableHead className="font-semibold">Role</TableHead>
-              <TableHead className="font-semibold">Status</TableHead>
-              <TableHead className="text-right font-semibold">Action</TableHead>
+            <TableRow className="bg-[#FDFCFB] hover:bg-[#FDFCFB]">
+              <TableHead className="text-[#0F172A] font-semibold">Nama</TableHead>
+              <TableHead className="text-[#0F172A] font-semibold">Bisnis</TableHead>
+              <TableHead className="text-[#0F172A] font-semibold">Kota</TableHead>
+              <TableHead className="text-[#0F172A] font-semibold">WhatsApp</TableHead>
+              <TableHead className="text-[#0F172A] font-semibold">Role Diajukan</TableHead>
+              <TableHead className="text-[#0F172A] font-semibold">Principal ID</TableHead>
+              <TableHead className="text-[#0F172A] font-semibold">Status</TableHead>
+              <TableHead className="text-[#0F172A] font-semibold text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -107,102 +122,105 @@ export default function UserManagementTable({ users }: UserManagementTableProps)
               const rejectKey = `reject-${user.principalId.toString()}`;
               const isApproving = loadingActions[approveKey];
               const isRejecting = loadingActions[rejectKey];
-
+              
               return (
-                <TableRow key={user.principalId.toString()}>
-                  <TableCell className="font-medium">
+                <TableRow key={user.principalId.toString()} className="hover:bg-[#FDFCFB]/50">
+                  <TableCell className="font-medium text-[#0F172A]">
                     <div>
-                      <div>{user.name}</div>
-                      {user.companyBisnis && (
-                        <div className="text-xs text-muted-foreground">{user.companyBisnis}</div>
-                      )}
+                      <p className="font-semibold">{user.name}</p>
+                      <p className="text-xs text-[#475569]">{user.idUser}</p>
                     </div>
+                  </TableCell>
+                  <TableCell className="text-[#475569]">
+                    {user.companyBisnis || '-'}
+                  </TableCell>
+                  <TableCell className="text-[#475569]">
+                    {user.kotaDomisili || '-'}
+                  </TableCell>
+                  <TableCell className="text-[#475569]">
+                    {user.phoneNumber ? (
+                      <a 
+                        href={`https://wa.me/${user.phoneNumber.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:text-green-700 hover:underline"
+                      >
+                        {user.phoneNumber}
+                      </a>
+                    ) : '-'}
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E5D5C0] text-[#0F172A]">
+                      {transformRoleLabel(user.requestedRole)}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <code className="font-mono text-xs bg-muted px-2 py-1 rounded">
-                        {user.principalId.toString().slice(0, 20)}...
+                      <code className="font-mono text-xs text-[#475569] bg-[#F8F9FA] px-2 py-1 rounded max-w-[120px] truncate">
+                        {user.principalId.toString()}
                       </code>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7"
+                        className="h-6 w-6"
                         onClick={() => copyToClipboard(user.principalId.toString())}
                       >
-                        <Copy className="h-3.5 w-3.5" />
+                        <Copy className="h-3 w-3 text-[#475569]" />
                       </Button>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="space-y-1">
-                      {user.email && (
-                        <div className="text-sm">
-                          <a href={`mailto:${user.email}`} className="text-blue-600 hover:underline">
-                            {user.email}
-                          </a>
-                        </div>
-                      )}
-                      {user.phoneNumber && (
-                        <div className="text-sm">
-                          <a
-                            href={`https://wa.me/${user.phoneNumber.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-green-600 hover:underline"
-                          >
-                            {user.phoneNumber}
-                          </a>
-                        </div>
-                      )}
-                      {!user.email && !user.phoneNumber && (
-                        <span className="text-xs text-muted-foreground">-</span>
-                      )}
-                    </div>
+                    {getStatusBadge(user.status)}
                   </TableCell>
-                  <TableCell>
-                    <RoleBadge role={user.role} />
-                  </TableCell>
-                  <TableCell>{getStatusBadge(user.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditingUser(user)}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        <Edit className="h-3.5 w-3.5 mr-1" />
-                        Edit Role
-                      </Button>
+                      {user.status === Status.active && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingUser(user)}
+                          className="text-[#0F172A] border-[#E5D5C0] hover:bg-[#FDFCFB]"
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit Role
+                        </Button>
+                      )}
                       {user.status === Status.pending && (
                         <>
                           <Button
-                            variant="default"
+                            variant="outline"
                             size="sm"
                             onClick={() => handleApprove(user)}
                             disabled={isApproving || isRejecting}
-                            className="bg-green-600 hover:bg-green-700 text-white"
+                            className="text-green-600 border-green-200 hover:bg-green-50"
                           >
                             {isApproving ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <>
+                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                Approving...
+                              </>
                             ) : (
                               <>
-                                <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                                <CheckCircle className="h-4 w-4 mr-1" />
                                 Approve
                               </>
                             )}
                           </Button>
                           <Button
-                            variant="destructive"
+                            variant="outline"
                             size="sm"
                             onClick={() => handleReject(user)}
                             disabled={isApproving || isRejecting}
+                            className="text-red-600 border-red-200 hover:bg-red-50"
                           >
                             {isRejecting ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <>
+                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                Rejecting...
+                              </>
                             ) : (
                               <>
-                                <XCircle className="h-3.5 w-3.5 mr-1" />
+                                <XCircle className="h-4 w-4 mr-1" />
                                 Reject
                               </>
                             )}

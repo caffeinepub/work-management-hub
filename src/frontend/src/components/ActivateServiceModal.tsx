@@ -26,6 +26,9 @@ export default function ActivateServiceModal({ isOpen, onClose }: ActivateServic
   const [openClientCombo, setOpenClientCombo] = useState(false);
   const [openAsistenmuCombo, setOpenAsistenmuCombo] = useState(false);
 
+  // Hardcoded service types
+  const serviceTypes = ['Tenang', 'Rapi', 'Fokus', 'Jaga', 'Efisien'];
+
   // Fetch all users for dropdowns
   const { data: allUsers = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ['allUsers'],
@@ -290,7 +293,7 @@ export default function ActivateServiceModal({ isOpen, onClose }: ActivateServic
               )}
             </div>
 
-            {/* Service Type Selection */}
+            {/* Service Type Selection - Hardcoded 5 options */}
             <div>
               <label htmlFor="serviceType" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Tipe Layanan
@@ -302,9 +305,11 @@ export default function ActivateServiceModal({ isOpen, onClose }: ActivateServic
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
               >
                 <option value="">-- Pilih Tipe Layanan --</option>
-                <option value="reportWriting">Report Writing</option>
-                <option value="assistance">Assistance</option>
-                <option value="dataEntry">Data Entry</option>
+                {serviceTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
               </select>
               {errors.serviceType && (
                 <p className="mt-1 text-sm text-red-600">{errors.serviceType}</p>

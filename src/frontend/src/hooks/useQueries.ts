@@ -69,6 +69,21 @@ export function useCurrentUser() {
   };
 }
 
+// New hook to get current user for ClientDashboard
+export function useGetCurrentUser() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<User | null>({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getCurrentUser();
+    },
+    enabled: !!actor && !actorFetching,
+    retry: false,
+  });
+}
+
 export function usePendingRequests() {
   const { actor, isFetching: actorFetching } = useActor();
 

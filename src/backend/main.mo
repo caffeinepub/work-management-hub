@@ -12,8 +12,6 @@ import Text "mo:core/Text";
 import Nat "mo:core/Nat";
 import Int "mo:core/Int";
 
-
-
 actor {
   public type Role = {
     #superadmin;
@@ -43,6 +41,24 @@ actor {
     idUser : Text;
     phoneNumber : ?Text;
     email : ?Text;
+    requestedRole : ?Text;
+    requestedAt : ?Int;
+    approvedAt : ?Int;
+    requestedBy : ?Principal;
+    approvedBy : ?Principal;
+    rejectedBy : ?Principal;
+    rejectedAt : ?Int;
+    rejectionReason : ?Text;
+    statusUpdatedAt : ?Int;
+    lastActiveAt : ?Int;
+    partnerLevel : ?Text;
+    partnerRating : ?Nat;
+    clientRating : ?Nat;
+    verificationStatus : ?Text;
+    verificationPartner : ?Principal;
+    verificationTimestamp : ?Int;
+    referralCode : ?Text;
+    referredBy : ?Text;
   };
 
   public type UserProfile = {
@@ -260,6 +276,57 @@ actor {
     "BAL-" # randomNumber.toText();
   };
 
+  public shared ({ caller }) func approveUser(principalId : Principal) : async () {
+    if (not isSuperAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only Superadmins can approve users");
+    };
+
+    switch (users.get(principalId)) {
+      case (null) { Runtime.trap("User not found") };
+      case (?user) {
+        if (user.status != #pending) {
+          Runtime.trap("Cannot approve user that is not pending approval");
+        };
+
+        let role = switch (user.requestedRole) {
+          case (null) { Runtime.trap("Requested role not found") };
+          case (?r) {
+            switch (r) {
+              case ("superadmin") { #superadmin };
+              case ("admin") { #admin };
+              case ("finance") { #finance };
+              case ("concierge") { #concierge };
+              case ("strategicPartner") { #strategicPartner };
+              case ("asistenmu") { #asistenmu };
+              case ("client") { #client };
+              case ("partner") { #partner };
+              case (_) { Runtime.trap("Invalid requested role") };
+            };
+          };
+        };
+
+        let now = Time.now();
+        let updatedUser = {
+          user with
+          role = role;
+          status = #active;
+          approvedAt = ?now;
+          approvedBy = ?caller;
+          statusUpdatedAt = ?now;
+        };
+
+        users.add(principalId, updatedUser);
+
+        let accessControlRole = switch (role) {
+          case (#superadmin) { #admin };
+          case (#admin) { #admin };
+          case (_) { #user };
+        };
+        AccessControl.assignRole(accessControlState, caller, principalId, accessControlRole);
+      };
+    };
+  };
+
   public query ({ caller }) func getMyLayananAktif() : async [LayananClientView] {
     // Authorization: Only active clients can query their own layanan
     if (not isActiveClient(caller)) {
@@ -303,7 +370,7 @@ actor {
     };
   };
 
-  private func isAuthorizedAdmin(caller : Principal) : Bool {
+  private func isAdmin(caller : Principal) : Bool {
     switch (users.get(caller)) {
       case (null) { false };
       case (?user) {
@@ -318,6 +385,13 @@ actor {
       case (?user) {
         user.status == #active and (user.role == #superadmin or user.role == #admin or user.role == #asistenmu or user.role == #concierge);
       };
+    };
+  };
+
+  private func isSuperAdmin(caller : Principal) : Bool {
+    switch (users.get(caller)) {
+      case (null) { false };
+      case (?user) { user.status == #active and user.role == #superadmin };
     };
   };
 
@@ -366,13 +440,31 @@ actor {
       createdAt = Time.now();
       phoneNumber = null;
       email = null;
+      requestedRole = ?("superadmin");
+      requestedAt = ?Time.now();
+      approvedAt = ?Time.now();
+      requestedBy = ?caller;
+      approvedBy = ?caller;
+      rejectedBy = ?caller;
+      rejectedAt = ?Time.now();
+      rejectionReason = ?("installation");
+      statusUpdatedAt = ?Time.now();
+      lastActiveAt = ?Time.now();
+      partnerLevel = ?("superadmin");
+      partnerRating = ?5;
+      clientRating = ?5;
+      verificationStatus = ?("installed");
+      verificationPartner = ?caller;
+      verificationTimestamp = ?Time.now();
+      referralCode = ?("superadmin");
+      referredBy = ?("superadmin");
     };
 
     users.add(caller, user);
   };
 
   public query ({ caller }) func getPendingRequests() : async [User] {
-    if (not isAuthorizedAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only Superadmin and Admin roles can perform this action");
     };
 
@@ -389,29 +481,8 @@ actor {
     );
   };
 
-  public shared ({ caller }) func approveUser(principalId : Principal) : async () {
-    if (not isAuthorizedAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only Superadmin and Admin roles can perform this action");
-    };
-
-    switch (users.get(principalId)) {
-      case (null) { Runtime.trap("User not found") };
-      case (?user) {
-        let updatedUser = { user with status = #active };
-        users.add(principalId, updatedUser);
-
-        let accessControlRole = switch (user.role) {
-          case (#superadmin) { #admin };
-          case (#admin) { #admin };
-          case (_) { #user };
-        };
-        AccessControl.assignRole(accessControlState, caller, principalId, accessControlRole);
-      };
-    };
-  };
-
   public shared ({ caller }) func rejectUser(principalId : Principal) : async () {
-    if (not isAuthorizedAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only Superadmin and Admin roles can perform this action");
     };
 
@@ -431,13 +502,31 @@ actor {
       idUser = user.idUser;
       phoneNumber = user.phoneNumber;
       email = user.email;
+      requestedRole = null;
+      requestedAt = null;
+      approvedAt = null;
+      requestedBy = null;
+      approvedBy = null;
+      rejectedBy = null;
+      rejectedAt = null;
+      rejectionReason = null;
+      statusUpdatedAt = null;
+      lastActiveAt = null;
+      partnerLevel = null;
+      partnerRating = null;
+      clientRating = null;
+      verificationStatus = null;
+      verificationPartner = null;
+      verificationTimestamp = null;
+      referralCode = null;
+      referredBy = null;
     };
 
     users.add(principalId, rejectedUser);
   };
 
   public shared ({ caller }) func updateUserRole(principalId : Principal, newRole : Role) : async () {
-    if (not isAuthorizedAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only Superadmin and Admin roles can perform this action");
     };
 
@@ -467,7 +556,7 @@ actor {
       case (?user) {
         ?{
           name = user.name;
-          requestedRole = null;
+          requestedRole = user.requestedRole;
           phoneNumber = user.phoneNumber;
           email = user.email;
         };
@@ -479,7 +568,7 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view profiles");
     };
-    if (caller != principalId and not isAuthorizedAdmin(caller)) {
+    if (caller != principalId and not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
     users.get(principalId);
@@ -503,6 +592,24 @@ actor {
           idUser = "";
           phoneNumber = profile.phoneNumber;
           email = profile.email;
+          requestedRole = profile.requestedRole;
+          requestedAt = ?Time.now();
+          approvedAt = null;
+          requestedBy = null;
+          approvedBy = null;
+          rejectedBy = null;
+          rejectedAt = null;
+          rejectionReason = null;
+          statusUpdatedAt = null;
+          lastActiveAt = null;
+          partnerLevel = null;
+          partnerRating = null;
+          clientRating = null;
+          verificationStatus = null;
+          verificationPartner = null;
+          verificationTimestamp = null;
+          referralCode = null;
+          referredBy = null;
         };
         users.add(caller, user);
       };
@@ -535,7 +642,7 @@ actor {
   };
 
   public shared ({ caller }) func registerInternalStaff(principalId : Principal, name : Text, role : Text) : async () {
-    if (not isAuthorizedAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only Superadmin and Admin roles can create internal users");
     };
 
@@ -582,6 +689,24 @@ actor {
       idUser = "";
       phoneNumber = null;
       email = null;
+      requestedRole = ?("role requested_role");
+      requestedAt = ?Time.now();
+      approvedAt = ?Time.now();
+      requestedBy = ?principalId;
+      approvedBy = ?principalId;
+      rejectedBy = ?principalId;
+      rejectedAt = ?Time.now();
+      rejectionReason = ?("role not valid");
+      statusUpdatedAt = ?Time.now();
+      lastActiveAt = ?Time.now();
+      partnerLevel = ?("finance");
+      partnerRating = ?5;
+      clientRating = ?5;
+      verificationStatus = ?("finance");
+      verificationPartner = ?principalId;
+      verificationTimestamp = ?Time.now();
+      referralCode = ?("finance");
+      referredBy = ?("finance");
     };
 
     users.add(principalId, user);
@@ -614,8 +739,8 @@ actor {
   };
 
   public query ({ caller }) func listApprovals() : async [UserApproval.UserApprovalInfo] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
+    if (not isAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins and superadmins can perform this action");
     };
     UserApproval.listApprovals(approvalState);
   };
@@ -644,6 +769,24 @@ actor {
       idUser;
       phoneNumber = ?phoneNumber;
       email = ?email;
+      requestedRole = ?("client");
+      requestedAt = ?Time.now();
+      approvedAt = null;
+      requestedBy = ?caller;
+      approvedBy = null;
+      rejectedBy = null;
+      rejectedAt = null;
+      rejectionReason = null;
+      statusUpdatedAt = ?Time.now();
+      lastActiveAt = ?Time.now();
+      partnerLevel = null;
+      partnerRating = null;
+      clientRating = null;
+      verificationStatus = null;
+      verificationPartner = null;
+      verificationTimestamp = null;
+      referralCode = null;
+      referredBy = null;
     };
     users.add(caller, newUser);
   };
@@ -665,6 +808,24 @@ actor {
       idUser;
       phoneNumber = null;
       email = null;
+      requestedRole = ?("partner");
+      requestedAt = ?Time.now();
+      approvedAt = null;
+      requestedBy = ?(caller);
+      approvedBy = null;
+      rejectedBy = null;
+      rejectedAt = null;
+      rejectionReason = null;
+      statusUpdatedAt = ?Time.now();
+      lastActiveAt = ?Time.now();
+      partnerLevel = ?"partner";
+      partnerRating = ?0;
+      clientRating = ?0;
+      verificationStatus = ?"pending";
+      verificationPartner = null;
+      verificationTimestamp = ?Time.now();
+      referralCode = null;
+      referredBy = null;
     };
     users.add(caller, newUser);
   };
@@ -712,13 +873,31 @@ actor {
       idUser;
       phoneNumber = null;
       email = null;
+      requestedRole = ?inputRole;
+      requestedAt = ?Time.now();
+      approvedAt = null;
+      requestedBy = ?caller;
+      approvedBy = null;
+      rejectedBy = null;
+      rejectedAt = null;
+      rejectionReason = null;
+      statusUpdatedAt = ?Time.now();
+      lastActiveAt = ?Time.now();
+      partnerLevel = ?inputRole;
+      partnerRating = ?0;
+      clientRating = ?0;
+      verificationStatus = ?"pending";
+      verificationPartner = null;
+      verificationTimestamp = null;
+      referralCode = null;
+      referredBy = null;
     };
 
     users.add(caller, newUser);
   };
 
   public shared ({ caller }) func createTask(clientId : Principal, layananId : Text, judul : Text, detailPermintaan : Text) : async CreateTaskResult {
-    if (not isActiveClient(caller) and not isAuthorizedAdmin(caller)) {
+    if (not isActiveClient(caller) and not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only active clients or admins can create tasks");
     };
 
@@ -1049,7 +1228,7 @@ actor {
   };
 
   public shared ({ caller }) func addPartnerBalance(partnerId : Principal, amount : Nat) : async Text {
-    if (not isAuthorizedAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only Superadmin and Admin roles can perform this action");
     };
 

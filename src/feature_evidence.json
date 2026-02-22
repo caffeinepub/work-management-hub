@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-infinite-loading-spinner-bug-in-usermanagementpage-component-user-management-route-by-wrapping-all-backend-data-fetch-calls-in-try-catch-blocks-ensuring-isloading-state-is-set-to-false-in-finally-blocks-regardless-of-success-or-failure-and-displaying-error-messages-via-toast-notifications-when-data-fetching-fails",
-      "featureTitle": "Fix infinite loading spinner bug in UserManagementPage component (/user-management route) by wrapping all backend data fetch calls in try-catch blocks, ensuring isLoading state is set to false in finally blocks regardless of success or failure, and displaying error messages via toast notifications when data fetching fails",
+      "featureId": "feature-in-usermanagementpage-tsx-and-usermanagementtable-tsx-ensure-the-requestedrole-field-is-properly-fetched-from-the-backend-and-mapped-to-the-ui-transform-lowercase-string-values-from-backend-client-asistenmu-admin-to-title-case-labels-client-asistenmu-admin-for-display-in-the-role-column-of-the-pending-users-table",
+      "featureTitle": "In UserManagementPage.tsx and UserManagementTable.tsx, ensure the requestedRole field is properly fetched from the backend and mapped to the UI. Transform lowercase string values from backend ('client', 'asistenmu', 'admin') to Title Case labels ('Client', 'Asistenmu', 'Admin') for display in the Role column of the pending users table.",
       "files": [
-        "frontend/src/components/UserManagementPage.tsx"
+        "frontend/src/components/UserManagementTable.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -22,10 +22,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-convert-the-pilih-client-dropdown-in-activateservicemodal-component-from-standard-select-to-a-searchable-autocomplete-combobox-that-allows-superadmin-to-type-and-filter-users-by-name-while-maintaining-the-user-id-principal-as-the-submitted-value-and-displaying-the-user-s-name-as-the-visible-label",
-      "featureTitle": "Convert the 'Pilih Client' dropdown in ActivateServiceModal component from standard select to a searchable/autocomplete combobox that allows superadmin to type and filter users by name, while maintaining the user ID (Principal) as the submitted value and displaying the user's name as the visible label",
+      "featureId": "feature-update-the-approve-button-in-usermanagementtable-tsx-to-send-the-principalid-parameter-to-the-backend-approveuser-function-with-requestedrole-as-a-lowercase-string-admin-client-asistenmu-add-a-loading-spinner-to-the-approve-button-to-indicate-the-blockchain-transaction-is-in-progress",
+      "featureTitle": "Update the Approve button in UserManagementTable.tsx to send the principalId parameter to the backend approveUser function with requestedRole as a lowercase string ('admin', 'client', 'asistenmu'). Add a loading spinner to the Approve button to indicate the blockchain transaction is in progress.",
       "files": [
-        "frontend/src/components/ActivateServiceModal.tsx"
+        "frontend/src/components/UserManagementTable.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -42,10 +42,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-convert-the-pilih-asistenmu-dropdown-in-activateservicemodal-component-from-standard-select-to-a-searchable-autocomplete-combobox-that-allows-superadmin-to-type-and-filter-users-by-name-while-maintaining-the-user-id-principal-as-the-submitted-value-and-displaying-the-user-s-name-as-the-visible-label",
-      "featureTitle": "Convert the 'Pilih Asistenmu' dropdown in ActivateServiceModal component from standard select to a searchable/autocomplete combobox that allows superadmin to type and filter users by name, while maintaining the user ID (Principal) as the submitted value and displaying the user's name as the visible label",
+      "featureId": "feature-in-usermanagementtable-tsx-update-the-user-detail-columns-to-display-name-user-name-business-user-companybisnis-city-user-kotadomisili-whatsapp-user-phonenumber-requested-role-user-requestedrole-transformed-to-title-case-and-principal-id-user-principalid-totext-with-monospace-font-and-small-size",
+      "featureTitle": "In UserManagementTable.tsx, update the user detail columns to display: Name (user.name), Business (user.companyBisnis), City (user.kotaDomisili), WhatsApp (user.phoneNumber), Requested Role (user.requestedRole transformed to Title Case), and Principal ID (user.principalId.toText() with monospace font and small size).",
       "files": [
-        "frontend/src/components/ActivateServiceModal.tsx"
+        "frontend/src/components/UserManagementTable.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -58,6 +58,68 @@
       ],
       "testIds": [
         "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-clientdashboard-tsx-integrate-with-the-getcurrentuser-backend-function-to-fetch-and-display-the-user-s-name-in-the-welcome-greeting-if-the-name-is-empty-or-unavailable-use-client-as-fallback-text",
+      "featureTitle": "In ClientDashboard.tsx, integrate with the getCurrentUser() backend function to fetch and display the user's name in the welcome greeting. If the name is empty or unavailable, use 'Client' as fallback text.",
+      "files": [
+        "frontend/src/components/ClientDashboard.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "user-approval@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-clientdashboard-tsx-implement-task-metrics-by-fetching-data-from-getclienttasks-backend-function-and-counting-tasks-by-status-on-the-frontend-display-three-metric-cards-task-meminta-review-kamu-count-tasks-with-status-client-review-task-sedang-dikerjakan-count-tasks-with-status-sedang-dikerjakan-and-task-selesai-count-tasks-with-status-completed-show-0-as-fallback-if-data-is-empty",
+      "featureTitle": "In ClientDashboard.tsx, implement task metrics by fetching data from getClientTasks() backend function and counting tasks by status on the frontend. Display three metric cards: 'Task Meminta Review Kamu' (count tasks with status 'Client Review'), 'Task Sedang Dikerjakan' (count tasks with status 'Sedang Dikerjakan'), and 'Task Selesai' (count tasks with status 'Completed'). Show 0 as fallback if data is empty.",
+      "files": [
+        "frontend/src/components/ClientDashboard.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "user-approval@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-all-updated-components-usermanagementpage-usermanagementtable-clientdashboard-maintain-the-boutique-theme-with-bg-fdfcfb-background-thin-gold-shadows-and-midnight-slate-text-colors-as-defined-in-the-existing-design-system",
+      "featureTitle": "Ensure all updated components (UserManagementPage, UserManagementTable, ClientDashboard) maintain the Boutique theme with bg-[#FDFCFB] background, thin gold shadows, and Midnight Slate text colors as defined in the existing design system.",
+      "files": [
+        "frontend/src/components/ClientDashboard.tsx",
+        "frontend/src/components/UserManagementTable.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "user-approval@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
       ],
       "confidence": "high"
     }
