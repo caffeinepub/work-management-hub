@@ -1,100 +1,51 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-22T07:20:49.061Z",
+  "generatedAt": "2026-02-22T12:26:54.762Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 7,
-    "implemented": 7,
+    "total": 3,
+    "implemented": 0,
     "items": [
       {
-        "id": "REQ-1",
-        "summary": "Add state management to InternalDashboard.tsx for pending users with pendingUsers state array and isLoadingPending boolean state",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ]
-      },
-      {
-        "id": "REQ-2",
-        "summary": "Implement fetchPendingUsers function in InternalDashboard.tsx that calls backendActor.getPendingRequests() and updates pendingUsers state with loading state management",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Add useEffect hook in InternalDashboard.tsx that calls fetchPendingUsers when currentUser role is 'superadmin' or 'admin'",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Implement handleApprove function in InternalDashboard.tsx that calls backendActor.approveUser with principalId parameter and refreshes pending users list",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ]
-      },
-      {
         "id": "REQ-5",
-        "summary": "Implement handleReject function in InternalDashboard.tsx that prompts for confirmation, calls backendActor.rejectUser with principalId parameter, and refreshes pending users list",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ]
+        "summary": "Implement updateTaskStatus function that accepts taskId and newStatus (TaskStatus) as parameters, updates the task's status field to the new status value for managing revision cycles (OnProgress → InQA → ClientReview → Revision → OnProgress)",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-6",
-        "summary": "Replace the Admin Panel card placeholder content in InternalDashboard.tsx with a table or list displaying pending users showing name, requested role, and action buttons for approve (green/primary) and reject (red/destructive)",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ]
+        "summary": "Implement completeTask function as the financial trigger that: (1) accepts taskId parameter, (2) retrieves task and layanan data, (3) burns units by subtracting task.estimasiJam from layanan.jamOnHold, (4) calculates partner payment using jamEfektif from task.internalData multiplied by hourly rate based on partner level (Junior: 35,000, Senior: 55,000, Expert: 75,000), (5) includes pseudo-code comment for adding pendapatanPartner to partner balance, (6) changes task status to Completed, and (7) returns success message with financial calculations",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-7",
-        "summary": "Display message 'Tidak ada permintaan pendaftaran baru' in the Admin Panel when pendingUsers array is empty",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/InternalDashboard.tsx"
-        ]
+        "summary": "Implement getClientTasks query function that: (1) accepts clientId (Principal) parameter, (2) filters tasks by clientId, (3) maps each task to TaskClientView type, (4) implements masking logic where PendingPartner and RejectedByPartner statuses display as 'Sedang Didelegasikan' (hiding rejections from client), (5) converts other statuses to user-friendly strings (OnProgress → 'Sedang Dikerjakan', InQA → 'Quality Assurance'), (6) excludes internalData field from the returned view, and (7) returns array of TaskClientView with clear comments marking the masking logic",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/InternalDashboard.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/ClientDashboard.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

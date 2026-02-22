@@ -1,15 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Add pending user approval feature to the Internal Dashboard for admins and superadmins.
+**Goal:** Implement task status management, financial completion triggers, and client view masking for the Work Management Hub.
 
 **Planned changes:**
-- Add state management for pending users list and loading state
-- Implement function to fetch pending user registration requests
-- Add approval handler that approves user and refreshes list
-- Add rejection handler with confirmation dialog that removes user and refreshes list
-- Replace Admin Panel card placeholder with table/list showing pending users with their name, requested role, and action buttons
-- Display empty state message when no pending requests exist
-- Only fetch and display pending users for admin and superadmin roles
+- Add updateTaskStatus function to manage revision cycles (OnProgress → InQA → ClientReview → Revision → OnProgress)
+- Add completeTask function as financial trigger that burns units from layanan.jamOnHold and calculates partner payments based on jamEfektif and partner level (Junior: 35k, Senior: 55k, Expert: 75k)
+- Add getClientTasks query function that masks PendingPartner and RejectedByPartner statuses as 'Sedang Didelegasikan' and excludes internalData field from client view
 
-**User-visible outcome:** Admins and superadmins can view pending user registration requests in the Admin Panel card and approve or reject them with action buttons. The list updates automatically after each action.
+**User-visible outcome:** Account Managers can update task statuses through revision cycles and mark tasks as complete with automated financial calculations. Clients can view their tasks with user-friendly status labels while sensitive rejection information and internal data remain hidden.

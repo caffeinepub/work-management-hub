@@ -1,158 +1,88 @@
 {
   "kind": "build_request",
-  "title": "Add pending users approval feature to InternalDashboard",
+  "title": "Implement Part 3: Task Status Updates, Financial Completion, and Client View Masking",
   "projectName": "Work Management Hub",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "Add state management to InternalDashboard.tsx for pending users with pendingUsers state array and isLoadingPending boolean state",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-build-request"
-        ],
-        "quotes": [
-          "const [pendingUsers, setPendingUsers] = useState<any[]>([]);",
-          "const [isLoadingPending, setIsLoadingPending] = useState(false);"
-        ]
-      },
-      "acceptanceCriteria": [
-        "pendingUsers state is initialized as empty array",
-        "isLoadingPending state is initialized as false"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Implement fetchPendingUsers function in InternalDashboard.tsx that calls backendActor.getPendingRequests() and updates pendingUsers state with loading state management",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-build-request"
-        ],
-        "quotes": [
-          "const fetchPendingUsers = async () => { if (!backendActor) return; setIsLoadingPending(true); try { const users = await backendActor.getPendingRequests(); setPendingUsers(users); } catch (error) { console.error(\"Gagal mengambil data pending:\", error); } finally { setIsLoadingPending(false); } };"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Function checks for backendActor availability before executing",
-        "Sets isLoadingPending to true before API call",
-        "Calls backendActor.getPendingRequests() and stores result in pendingUsers state",
-        "Handles errors with console.error logging",
-        "Sets isLoadingPending to false in finally block"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Add useEffect hook in InternalDashboard.tsx that calls fetchPendingUsers when currentUser role is 'superadmin' or 'admin'",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-build-request"
-        ],
-        "quotes": [
-          "useEffect(() => { if (currentUser && (currentUser.role === 'superadmin' || currentUser.role === 'admin')) { fetchPendingUsers(); } }, [currentUser, backendActor]);"
-        ]
-      },
-      "acceptanceCriteria": [
-        "useEffect triggers when currentUser or backendActor changes",
-        "fetchPendingUsers is called only when currentUser role is 'superadmin' or 'admin'",
-        "No fetch occurs for other user roles"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Implement handleApprove function in InternalDashboard.tsx that calls backendActor.approveUser with principalId parameter and refreshes pending users list",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-build-request"
-        ],
-        "quotes": [
-          "const handleApprove = async (principalId: any) => { try { await backendActor.approveUser(principalId); fetchPendingUsers(); } catch (error) { console.error(\"Gagal approve:\", error); } };"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Function accepts principalId parameter",
-        "Calls backendActor.approveUser with principalId",
-        "Calls fetchPendingUsers after successful approval to refresh list",
-        "Handles errors with console.error logging"
-      ]
-    },
-    {
       "id": "REQ-5",
-      "text": "Implement handleReject function in InternalDashboard.tsx that prompts for confirmation, calls backendActor.rejectUser with principalId parameter, and refreshes pending users list",
-      "target": "frontend",
+      "text": "Implement updateTaskStatus function that accepts taskId and newStatus (TaskStatus) as parameters, updates the task's status field to the new status value for managing revision cycles (OnProgress → InQA → ClientReview → Revision → OnProgress)",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-user-build-request"
+          "msg-recent"
         ],
         "quotes": [
-          "const handleReject = async (principalId: any) => { try { if(window.confirm(\"Yakin ingin menolak dan menghapus user ini?\")) { await backendActor.rejectUser(principalId); fetchPendingUsers(); } } catch (error) { console.error(\"Gagal reject:\", error); } };"
+          "updateTaskStatus (Update Call - Dipanggil AM/Client): Menerima parameter `taskId` dan `newStatus` (TaskStatus). Logic: Fungsi ini digunakan untuk memutar siklus revisi"
         ]
       },
       "acceptanceCriteria": [
-        "Function accepts principalId parameter",
-        "Shows confirmation dialog with text 'Yakin ingin menolak dan menghapus user ini?'",
-        "Only proceeds with rejection if user confirms",
-        "Calls backendActor.rejectUser with principalId after confirmation",
-        "Calls fetchPendingUsers after successful rejection to refresh list",
-        "Handles errors with console.error logging"
+        "Function accepts taskId and newStatus parameters",
+        "Updates the task's status field to newStatus",
+        "Returns success or error result"
       ]
     },
     {
       "id": "REQ-6",
-      "text": "Replace the Admin Panel card placeholder content in InternalDashboard.tsx with a table or list displaying pending users showing name, requested role, and action buttons for approve (green/primary) and reject (red/destructive)",
-      "target": "frontend",
+      "text": "Implement completeTask function as the financial trigger that: (1) accepts taskId parameter, (2) retrieves task and layanan data, (3) burns units by subtracting task.estimasiJam from layanan.jamOnHold, (4) calculates partner payment using jamEfektif from task.internalData multiplied by hourly rate based on partner level (Junior: 35,000, Senior: 55,000, Expert: 75,000), (5) includes pseudo-code comment for adding pendapatanPartner to partner balance, (6) changes task status to Completed, and (7) returns success message with financial calculations",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-user-build-request"
+          "msg-recent"
         ],
         "quotes": [
-          "Ganti isi dari Card 'Admin Panel' (yang sebelumnya berisi teks 'Fitur admin akan segera tersedia') menjadi sebuah Tabel atau List sederhana yang me-map `pendingUsers`",
-          "Tampilkan informasi: Nama, Role yang diajukan, Tombol Action: 'Approve' (Warna Hijau/Primary) dan 'Reject' (Warna Merah/Destructive)"
+          "completeTask (Update Call - THE FINANCIAL TRIGGER)",
+          "Eksekusi Burn Unit: `layanan.jamOnHold -= task.estimasiJam`",
+          "Kalkulasi Pembayaran Partner: Ambil nilai `jamEfektif` dari `task.internalData`. Tentukan hourly rate berdasarkan level Partner (Gunakan mockup ini: Junior = 35_000, Senior = 55_000, Expert = 75_000)"
         ]
       },
       "acceptanceCriteria": [
-        "Admin Panel card content is replaced with pending users display",
-        "Table or list maps through pendingUsers array",
-        "Each row displays user name and requested role",
-        "Each row has Approve button styled in green/primary color",
-        "Each row has Reject button styled in red/destructive color",
-        "Approve button calls handleApprove with user principalId",
-        "Reject button calls handleReject with user principalId"
+        "Function accepts taskId parameter",
+        "Burns units from layanan.jamOnHold by subtracting task.estimasiJam",
+        "Calculates partner payment: jamEfektif × hourly rate (Junior: 35k, Senior: 55k, Expert: 75k)",
+        "Includes TODO pseudo-code comment for updating partner balance",
+        "Sets task status to Completed",
+        "Returns success message with financial calculation details",
+        "Includes clear comments marking the financial trigger logic"
       ]
     },
     {
       "id": "REQ-7",
-      "text": "Display message 'Tidak ada permintaan pendaftaran baru' in the Admin Panel when pendingUsers array is empty",
-      "target": "frontend",
+      "text": "Implement getClientTasks query function that: (1) accepts clientId (Principal) parameter, (2) filters tasks by clientId, (3) maps each task to TaskClientView type, (4) implements masking logic where PendingPartner and RejectedByPartner statuses display as 'Sedang Didelegasikan' (hiding rejections from client), (5) converts other statuses to user-friendly strings (OnProgress → 'Sedang Dikerjakan', InQA → 'Quality Assurance'), (6) excludes internalData field from the returned view, and (7) returns array of TaskClientView with clear comments marking the masking logic",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-user-build-request"
+          "msg-recent"
         ],
         "quotes": [
-          "Jika pendingUsers.length === 0, tampilkan teks 'Tidak ada permintaan pendaftaran baru.'"
+          "getClientTasks (Query Call - THE MASKING VIEW)",
+          "ATURAN MASKING STATUS (Wajib): Jika status `#PendingPartner` ATAU `#RejectedByPartner`, maka field `statusTampil` harus berisi string 'Sedang Didelegasikan'",
+          "Pastikan field rahasia seperti `internalData` TIDAK MASUK ke dalam return view ini"
         ]
       },
       "acceptanceCriteria": [
-        "Empty state message is shown when pendingUsers.length equals 0",
-        "Message text is exactly 'Tidak ada permintaan pendaftaran baru'",
-        "Message is displayed in the Admin Panel card area"
+        "Function accepts clientId parameter",
+        "Filters tasks belonging to the specified client",
+        "Maps tasks to TaskClientView type",
+        "Masks PendingPartner and RejectedByPartner statuses as 'Sedang Didelegasikan'",
+        "Converts other statuses to user-friendly display strings",
+        "Excludes internalData field from the returned view",
+        "Returns array of TaskClientView objects",
+        "Includes clear comments marking the masking logic"
       ]
     }
   ],
   "constraints": [
-    "Only modify InternalDashboard.tsx file",
-    "Use existing backendActor from useActor hook",
-    "Admin Panel feature must only be visible to users with role 'superadmin' or 'admin'",
-    "Must use existing shadcn/ui components for table and buttons"
+    "Maintain consistency with existing Task and Layanan data structures",
+    "Use hourly rates exactly as specified: Junior = 35,000, Senior = 55,000, Expert = 75,000",
+    "Ensure internalData field is never exposed in client-facing queries",
+    "Keep all logic within the single-actor architecture in backend/main.mo"
   ],
   "nonGoals": [
-    "Modifying backend API endpoints",
-    "Changing user authentication flow",
-    "Adding new user roles",
-    "Modifying other dashboard components"
+    "Implementing actual partner balance updates (pseudo-code comment only)",
+    "Creating new frontend components for these functions",
+    "Modifying existing task creation or approval flows",
+    "Adding database persistence beyond in-memory state"
   ],
   "imageRequirements": {
     "required": [],

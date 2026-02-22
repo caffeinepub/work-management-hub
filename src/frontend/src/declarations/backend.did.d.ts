@@ -13,6 +13,35 @@ import type { Principal } from '@icp-sdk/core/principal';
 export type ApprovalStatus = { 'pending' : null } |
   { 'approved' : null } |
   { 'rejected' : null };
+export type ApproveEstimasiClientResult = { 'ok' : string } |
+  { 'err' : string };
+export type AssignPartnerResult = { 'ok' : string } |
+  { 'err' : string };
+export type CompleteTaskResult = { 'ok' : FinancialResult } |
+  { 'err' : string };
+export type CreateTaskResult = { 'ok' : string } |
+  { 'err' : string };
+export interface FinancialResult {
+  'status' : string,
+  'platformFee' : bigint,
+  'partnerReferralFee' : bigint,
+  'taskId' : string,
+  'jamDibakar' : bigint,
+  'jumlahBayar' : bigint,
+  'partnerFee' : bigint,
+}
+export type InputEstimasiAMResult = { 'ok' : string } |
+  { 'err' : string };
+export interface InternalData {
+  'levelPartner' : string,
+  'jamEfektif' : bigint,
+  'deadline' : bigint,
+  'partnerId' : Principal,
+  'scopeKerja' : string,
+  'linkDriveInternal' : string,
+}
+export type ResponPartnerResult = { 'ok' : string } |
+  { 'err' : string };
 export type Role = { 'client' : null } |
   { 'admin' : null } |
   { 'finance' : null } |
@@ -23,6 +52,28 @@ export type Role = { 'client' : null } |
   { 'partner' : null };
 export type Status = { 'active' : null } |
   { 'pending' : null };
+export interface TaskClientView {
+  'id' : string,
+  'status' : string,
+  'clientId' : Principal,
+  'internalData' : [] | [InternalData],
+  'estimasiJam' : bigint,
+  'judul' : string,
+  'linkDriveClient' : [] | [string],
+  'detailPermintaan' : string,
+  'layananId' : string,
+}
+export type TaskStatus = { 'PendingPartner' : null } |
+  { 'InQA' : null } |
+  { 'ClientReview' : null } |
+  { 'OnProgress' : null } |
+  { 'Revision' : null } |
+  { 'AwaitingClientApproval' : null } |
+  { 'Requested' : null } |
+  { 'RejectedByPartner' : null } |
+  { 'Completed' : null };
+export type UpdateTaskStatusResult = { 'ok' : string } |
+  { 'err' : string };
 export interface User {
   'status' : Status,
   'name' : string,
@@ -46,25 +97,42 @@ export type UserRole = { 'admin' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'approveEstimasiClient' : ActorMethod<[string], ApproveEstimasiClientResult>,
   'approveUser' : ActorMethod<[Principal], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'assignPartner' : ActorMethod<
+    [string, Principal, string, bigint, string, bigint, string],
+    AssignPartnerResult
+  >,
   'claimSuperadmin' : ActorMethod<[], undefined>,
+  'completeTask' : ActorMethod<[string], CompleteTaskResult>,
+  'createTask' : ActorMethod<
+    [Principal, string, string, string],
+    CreateTaskResult
+  >,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getClientTasks' : ActorMethod<[Principal], Array<TaskClientView>>,
   'getCurrentUser' : ActorMethod<[], [] | [User]>,
   'getPendingRequests' : ActorMethod<[], Array<User>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [User]>,
+  'inputEstimasiAM' : ActorMethod<[string, bigint], InputEstimasiAMResult>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isCallerApproved' : ActorMethod<[], boolean>,
   'listApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
   'registerInternalStaff' : ActorMethod<[Principal, string, string], undefined>,
   'rejectUser' : ActorMethod<[Principal], undefined>,
   'requestApproval' : ActorMethod<[], undefined>,
+  'responPartner' : ActorMethod<[string, boolean], ResponPartnerResult>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'selfRegisterClient' : ActorMethod<[string, string], undefined>,
   'selfRegisterInternal' : ActorMethod<[string, string], undefined>,
   'selfRegisterPartner' : ActorMethod<[string, string], undefined>,
   'setApproval' : ActorMethod<[Principal, ApprovalStatus], undefined>,
+  'updateTaskStatus' : ActorMethod<
+    [string, TaskStatus],
+    UpdateTaskStatusResult
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

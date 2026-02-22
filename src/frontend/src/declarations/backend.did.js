@@ -8,14 +8,58 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const ApproveEstimasiClientResult = IDL.Variant({
+  'ok' : IDL.Text,
+  'err' : IDL.Text,
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const AssignPartnerResult = IDL.Variant({
+  'ok' : IDL.Text,
+  'err' : IDL.Text,
+});
+export const FinancialResult = IDL.Record({
+  'status' : IDL.Text,
+  'platformFee' : IDL.Nat,
+  'partnerReferralFee' : IDL.Nat,
+  'taskId' : IDL.Text,
+  'jamDibakar' : IDL.Nat,
+  'jumlahBayar' : IDL.Nat,
+  'partnerFee' : IDL.Nat,
+});
+export const CompleteTaskResult = IDL.Variant({
+  'ok' : FinancialResult,
+  'err' : IDL.Text,
+});
+export const CreateTaskResult = IDL.Variant({
+  'ok' : IDL.Text,
+  'err' : IDL.Text,
+});
 export const UserProfile = IDL.Record({
   'name' : IDL.Text,
   'requestedRole' : IDL.Opt(IDL.Text),
+});
+export const InternalData = IDL.Record({
+  'levelPartner' : IDL.Text,
+  'jamEfektif' : IDL.Nat,
+  'deadline' : IDL.Int,
+  'partnerId' : IDL.Principal,
+  'scopeKerja' : IDL.Text,
+  'linkDriveInternal' : IDL.Text,
+});
+export const TaskClientView = IDL.Record({
+  'id' : IDL.Text,
+  'status' : IDL.Text,
+  'clientId' : IDL.Principal,
+  'internalData' : IDL.Opt(InternalData),
+  'estimasiJam' : IDL.Nat,
+  'judul' : IDL.Text,
+  'linkDriveClient' : IDL.Opt(IDL.Text),
+  'detailPermintaan' : IDL.Text,
+  'layananId' : IDL.Text,
 });
 export const Status = IDL.Variant({
   'active' : IDL.Null,
@@ -41,6 +85,10 @@ export const User = IDL.Record({
   'principalId' : IDL.Principal,
   'kotaDomisili' : IDL.Opt(IDL.Text),
 });
+export const InputEstimasiAMResult = IDL.Variant({
+  'ok' : IDL.Text,
+  'err' : IDL.Text,
+});
 export const ApprovalStatus = IDL.Variant({
   'pending' : IDL.Null,
   'approved' : IDL.Null,
@@ -50,17 +98,62 @@ export const UserApprovalInfo = IDL.Record({
   'status' : ApprovalStatus,
   'principal' : IDL.Principal,
 });
+export const ResponPartnerResult = IDL.Variant({
+  'ok' : IDL.Text,
+  'err' : IDL.Text,
+});
+export const TaskStatus = IDL.Variant({
+  'PendingPartner' : IDL.Null,
+  'InQA' : IDL.Null,
+  'ClientReview' : IDL.Null,
+  'OnProgress' : IDL.Null,
+  'Revision' : IDL.Null,
+  'AwaitingClientApproval' : IDL.Null,
+  'Requested' : IDL.Null,
+  'RejectedByPartner' : IDL.Null,
+  'Completed' : IDL.Null,
+});
+export const UpdateTaskStatusResult = IDL.Variant({
+  'ok' : IDL.Text,
+  'err' : IDL.Text,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'approveEstimasiClient' : IDL.Func(
+      [IDL.Text],
+      [ApproveEstimasiClientResult],
+      [],
+    ),
   'approveUser' : IDL.Func([IDL.Principal], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'assignPartner' : IDL.Func(
+      [IDL.Text, IDL.Principal, IDL.Text, IDL.Int, IDL.Text, IDL.Nat, IDL.Text],
+      [AssignPartnerResult],
+      [],
+    ),
   'claimSuperadmin' : IDL.Func([], [], []),
+  'completeTask' : IDL.Func([IDL.Text], [CompleteTaskResult], []),
+  'createTask' : IDL.Func(
+      [IDL.Principal, IDL.Text, IDL.Text, IDL.Text],
+      [CreateTaskResult],
+      [],
+    ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getClientTasks' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Vec(TaskClientView)],
+      ['query'],
+    ),
   'getCurrentUser' : IDL.Func([], [IDL.Opt(User)], ['query']),
   'getPendingRequests' : IDL.Func([], [IDL.Vec(User)], ['query']),
   'getUserProfile' : IDL.Func([IDL.Principal], [IDL.Opt(User)], ['query']),
+  'inputEstimasiAM' : IDL.Func(
+      [IDL.Text, IDL.Nat],
+      [InputEstimasiAMResult],
+      [],
+    ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
   'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
@@ -71,24 +164,71 @@ export const idlService = IDL.Service({
     ),
   'rejectUser' : IDL.Func([IDL.Principal], [], []),
   'requestApproval' : IDL.Func([], [], []),
+  'responPartner' : IDL.Func([IDL.Text, IDL.Bool], [ResponPartnerResult], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'selfRegisterClient' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'selfRegisterInternal' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'selfRegisterPartner' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
+  'updateTaskStatus' : IDL.Func(
+      [IDL.Text, TaskStatus],
+      [UpdateTaskStatusResult],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const ApproveEstimasiClientResult = IDL.Variant({
+    'ok' : IDL.Text,
+    'err' : IDL.Text,
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const AssignPartnerResult = IDL.Variant({
+    'ok' : IDL.Text,
+    'err' : IDL.Text,
+  });
+  const FinancialResult = IDL.Record({
+    'status' : IDL.Text,
+    'platformFee' : IDL.Nat,
+    'partnerReferralFee' : IDL.Nat,
+    'taskId' : IDL.Text,
+    'jamDibakar' : IDL.Nat,
+    'jumlahBayar' : IDL.Nat,
+    'partnerFee' : IDL.Nat,
+  });
+  const CompleteTaskResult = IDL.Variant({
+    'ok' : FinancialResult,
+    'err' : IDL.Text,
+  });
+  const CreateTaskResult = IDL.Variant({ 'ok' : IDL.Text, 'err' : IDL.Text });
   const UserProfile = IDL.Record({
     'name' : IDL.Text,
     'requestedRole' : IDL.Opt(IDL.Text),
+  });
+  const InternalData = IDL.Record({
+    'levelPartner' : IDL.Text,
+    'jamEfektif' : IDL.Nat,
+    'deadline' : IDL.Int,
+    'partnerId' : IDL.Principal,
+    'scopeKerja' : IDL.Text,
+    'linkDriveInternal' : IDL.Text,
+  });
+  const TaskClientView = IDL.Record({
+    'id' : IDL.Text,
+    'status' : IDL.Text,
+    'clientId' : IDL.Principal,
+    'internalData' : IDL.Opt(InternalData),
+    'estimasiJam' : IDL.Nat,
+    'judul' : IDL.Text,
+    'linkDriveClient' : IDL.Opt(IDL.Text),
+    'detailPermintaan' : IDL.Text,
+    'layananId' : IDL.Text,
   });
   const Status = IDL.Variant({ 'active' : IDL.Null, 'pending' : IDL.Null });
   const Role = IDL.Variant({
@@ -111,6 +251,10 @@ export const idlFactory = ({ IDL }) => {
     'principalId' : IDL.Principal,
     'kotaDomisili' : IDL.Opt(IDL.Text),
   });
+  const InputEstimasiAMResult = IDL.Variant({
+    'ok' : IDL.Text,
+    'err' : IDL.Text,
+  });
   const ApprovalStatus = IDL.Variant({
     'pending' : IDL.Null,
     'approved' : IDL.Null,
@@ -120,17 +264,70 @@ export const idlFactory = ({ IDL }) => {
     'status' : ApprovalStatus,
     'principal' : IDL.Principal,
   });
+  const ResponPartnerResult = IDL.Variant({
+    'ok' : IDL.Text,
+    'err' : IDL.Text,
+  });
+  const TaskStatus = IDL.Variant({
+    'PendingPartner' : IDL.Null,
+    'InQA' : IDL.Null,
+    'ClientReview' : IDL.Null,
+    'OnProgress' : IDL.Null,
+    'Revision' : IDL.Null,
+    'AwaitingClientApproval' : IDL.Null,
+    'Requested' : IDL.Null,
+    'RejectedByPartner' : IDL.Null,
+    'Completed' : IDL.Null,
+  });
+  const UpdateTaskStatusResult = IDL.Variant({
+    'ok' : IDL.Text,
+    'err' : IDL.Text,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'approveEstimasiClient' : IDL.Func(
+        [IDL.Text],
+        [ApproveEstimasiClientResult],
+        [],
+      ),
     'approveUser' : IDL.Func([IDL.Principal], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'assignPartner' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Principal,
+          IDL.Text,
+          IDL.Int,
+          IDL.Text,
+          IDL.Nat,
+          IDL.Text,
+        ],
+        [AssignPartnerResult],
+        [],
+      ),
     'claimSuperadmin' : IDL.Func([], [], []),
+    'completeTask' : IDL.Func([IDL.Text], [CompleteTaskResult], []),
+    'createTask' : IDL.Func(
+        [IDL.Principal, IDL.Text, IDL.Text, IDL.Text],
+        [CreateTaskResult],
+        [],
+      ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getClientTasks' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Vec(TaskClientView)],
+        ['query'],
+      ),
     'getCurrentUser' : IDL.Func([], [IDL.Opt(User)], ['query']),
     'getPendingRequests' : IDL.Func([], [IDL.Vec(User)], ['query']),
     'getUserProfile' : IDL.Func([IDL.Principal], [IDL.Opt(User)], ['query']),
+    'inputEstimasiAM' : IDL.Func(
+        [IDL.Text, IDL.Nat],
+        [InputEstimasiAMResult],
+        [],
+      ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
     'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
@@ -141,11 +338,17 @@ export const idlFactory = ({ IDL }) => {
       ),
     'rejectUser' : IDL.Func([IDL.Principal], [], []),
     'requestApproval' : IDL.Func([], [], []),
+    'responPartner' : IDL.Func([IDL.Text, IDL.Bool], [ResponPartnerResult], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'selfRegisterClient' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'selfRegisterInternal' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'selfRegisterPartner' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
+    'updateTaskStatus' : IDL.Func(
+        [IDL.Text, TaskStatus],
+        [UpdateTaskStatusResult],
+        [],
+      ),
   });
 };
 
