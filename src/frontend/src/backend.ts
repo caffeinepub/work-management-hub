@@ -146,6 +146,21 @@ export type CompleteTaskResult = {
     __kind__: "err";
     err: string;
 };
+export interface LayananClientView {
+    id: string;
+    status: string;
+    unitAktif: bigint;
+    harga: bigint;
+    nama: string;
+    jumlahSharing: bigint;
+    deadline: bigint;
+    saldo: bigint;
+    scopeKerja: string;
+    jamOnHold: bigint;
+    unitOnHold: bigint;
+    namaAsistenmu: string;
+    saldoJamEfektif: bigint;
+}
 export interface UserApprovalInfo {
     status: ApprovalStatus;
     principal: Principal;
@@ -221,8 +236,10 @@ export enum UserRole {
 }
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
+    addPartnerBalance(partnerId: Principal, amount: bigint): Promise<string>;
     approveEstimasiClient(taskId: string): Promise<ApproveEstimasiClientResult>;
     approveUser(principalId: Principal): Promise<void>;
+    approveWithdraw(requestId: string, financeId: Principal): Promise<string>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     assignPartner(taskId: string, partnerId: Principal, scopeKerja: string, deadline: bigint, linkDriveInternal: string, jamEfektif: bigint, levelPartner: string): Promise<AssignPartnerResult>;
     claimSuperadmin(): Promise<void>;
@@ -232,6 +249,7 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getClientTasks(clientId: Principal): Promise<Array<TaskClientView>>;
     getCurrentUser(): Promise<User | null>;
+    getMyLayananAktif(clientId: Principal): Promise<Array<LayananClientView>>;
     getPendingRequests(): Promise<Array<User>>;
     getUserProfile(principalId: Principal): Promise<User | null>;
     inputEstimasiAM(taskId: string, estimasiJam: bigint): Promise<InputEstimasiAMResult>;
@@ -240,7 +258,9 @@ export interface backendInterface {
     listApprovals(): Promise<Array<UserApprovalInfo>>;
     registerInternalStaff(principalId: Principal, name: string, role: string): Promise<void>;
     rejectUser(principalId: Principal): Promise<void>;
+    rejectWithdraw(requestId: string, financeId: Principal): Promise<string>;
     requestApproval(): Promise<void>;
+    requestWithdraw(partnerId: Principal, amount: bigint): Promise<string>;
     responPartner(taskId: string, acceptance: boolean): Promise<ResponPartnerResult>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     selfRegisterClient(name: string, company: string): Promise<void>;
@@ -263,6 +283,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor._initializeAccessControlWithSecret(arg0);
+            return result;
+        }
+    }
+    async addPartnerBalance(arg0: Principal, arg1: bigint): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addPartnerBalance(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addPartnerBalance(arg0, arg1);
             return result;
         }
     }
@@ -291,6 +325,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.approveUser(arg0);
+            return result;
+        }
+    }
+    async approveWithdraw(arg0: string, arg1: Principal): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.approveWithdraw(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.approveWithdraw(arg0, arg1);
             return result;
         }
     }
@@ -420,6 +468,20 @@ export class Backend implements backendInterface {
             return from_candid_opt_n19(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getMyLayananAktif(arg0: Principal): Promise<Array<LayananClientView>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getMyLayananAktif(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getMyLayananAktif(arg0);
+            return result;
+        }
+    }
     async getPendingRequests(): Promise<Array<User>> {
         if (this.processError) {
             try {
@@ -532,6 +594,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async rejectWithdraw(arg0: string, arg1: Principal): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.rejectWithdraw(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.rejectWithdraw(arg0, arg1);
+            return result;
+        }
+    }
     async requestApproval(): Promise<void> {
         if (this.processError) {
             try {
@@ -543,6 +619,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.requestApproval();
+            return result;
+        }
+    }
+    async requestWithdraw(arg0: Principal, arg1: bigint): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.requestWithdraw(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.requestWithdraw(arg0, arg1);
             return result;
         }
     }

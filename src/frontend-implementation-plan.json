@@ -1,6 +1,149 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Part 3: Task Status Updates, Financial Completion, and Client View Masking - Frontend Integration",
-  "requirements": []
+  "title": "Create Service Activation Form Modal with Reactive Calculations",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Create a self-contained modal component 'ActivateServiceModal' with React state and Tailwind CSS styling",
+      "acceptanceCriteria": [
+        "Modal component is self-contained without external UI libraries (no Headless UI/Radix UI)",
+        "Modal uses React state for open/close control",
+        "Semi-transparent black overlay is present behind modal content",
+        "Modal is built with TypeScript and Tailwind CSS"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/ActivateServiceModal.tsx",
+          "operation": "create",
+          "description": "Create a new modal component using React state (isOpen prop and onClose callback). Implement a semi-transparent black overlay (bg-black/50) that covers the viewport with fixed positioning. The modal content should be centered with a white background card. Export interface ActivateServiceModalProps with isOpen: boolean and onClose: () => void. Use Tailwind utilities for layout, spacing, and transitions."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Add five form fields in specified order: Client dropdown, Asistenmu dropdown, Service Type dropdown, Unit Quantity input, and Price Per Unit input",
+      "acceptanceCriteria": [
+        "All five form fields appear in the specified order",
+        "Client dropdown contains exactly 'PT Maju' and 'CV Sejahtera'",
+        "Asistenmu dropdown contains exactly 'Budi' and 'Siti'",
+        "Service Type dropdown contains all five options: Tenang, Rapi, Fokus, Jaga, Efisien",
+        "Both number inputs accept numeric values only"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/ActivateServiceModal.tsx",
+          "operation": "modify",
+          "description": "Add form state using React useState hooks for: selectedClient (string), selectedAsistenmu (string), selectedServiceType (string), unitQuantity (number), pricePerUnit (number). Render five form fields in order: (1) Select dropdown labeled 'Pilih Client' with options 'PT Maju' and 'CV Sejahtera', (2) Select dropdown labeled 'Pilih Asistenmu' with options 'Budi' and 'Siti', (3) Select dropdown labeled 'Tipe Layanan' with options Tenang, Rapi, Fokus, Jaga, Efisien, (4) Number input labeled 'Jumlah Unit Pembelian', (5) Number input labeled 'Harga Jual Per Unit (Rp)'. Use controlled components with value and onChange handlers. Style select elements and inputs consistently with Tailwind classes for borders, padding, and focus states."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Display reactive helper text below Unit Quantity showing effective hours calculation",
+      "acceptanceCriteria": [
+        "Helper text appears directly below the unit quantity input",
+        "Text color is gray",
+        "Calculation shows unit quantity multiplied by 2",
+        "Text updates in real-time as user types in the unit field"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/ActivateServiceModal.tsx",
+          "operation": "modify",
+          "description": "Add a computed value effectiveHours that calculates unitQuantity * 2. Below the 'Jumlah Unit Pembelian' input, render a paragraph with text-gray-600 class displaying 'Setara dengan [effectiveHours] Jam Efektif'. Use React's automatic re-rendering to update this text whenever unitQuantity state changes. Position the text with appropriate margin-top for spacing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Display reactive GMV calculation below Price Per Unit with thousand separator formatting",
+      "acceptanceCriteria": [
+        "Helper text appears directly below the price input",
+        "Text is bold and uses primary theme color",
+        "GMV calculation multiplies unit quantity by price per unit",
+        "Numbers display with dot (.) as thousand separator (e.g., 1.500.000)",
+        "Text updates in real-time as user changes unit or price values"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/ActivateServiceModal.tsx",
+          "operation": "modify",
+          "description": "Add a computed value totalGMV that calculates unitQuantity * pricePerUnit. Create a formatting helper function formatCurrency that converts numbers to Indonesian Rupiah format with dot thousand separators (e.g., 1500000 becomes '1.500.000'). Below the 'Harga Jual Per Unit' input, render a paragraph with font-bold and text-emerald-600 classes displaying 'Total Tagihan (GMV): Rp [formatted totalGMV]'. The text updates automatically on any change to unitQuantity or pricePerUnit state."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Format Price Per Unit input display with thousand separators while maintaining numeric state",
+      "acceptanceCriteria": [
+        "Input displays formatted value with dots as thousand separators",
+        "User can type naturally and formatting applies automatically",
+        "Internal state stores the numeric value without formatting",
+        "Formatting updates in real-time as user types"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/ActivateServiceModal.tsx",
+          "operation": "modify",
+          "description": "Modify the 'Harga Jual Per Unit' input to use a separate displayValue state (string) for the formatted display. On onChange, parse the input value to remove dots, convert to number, update the pricePerUnit state (pure number), then format and update displayValue with thousand separators. On input focus/blur, handle formatting transitions smoothly. The underlying pricePerUnit state remains a pure number for calculations while displayValue shows the formatted string in the input field."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Implement form validation for required fields and numeric constraints",
+      "acceptanceCriteria": [
+        "Form cannot be submitted if any field is empty",
+        "Unit quantity input rejects values less than 1",
+        "Price input rejects values less than or equal to 0",
+        "Validation errors are displayed to the user",
+        "Submit button is disabled or validation prevents submission when requirements are not met"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/ActivateServiceModal.tsx",
+          "operation": "modify",
+          "description": "Add validation state for errors (object with field-specific error messages). Create a validateForm function that checks: all select fields are not empty strings, unitQuantity >= 1, pricePerUnit > 0. Display error messages below respective fields using text-red-600 text when validation fails. Add a computed isFormValid boolean that runs validation checks. Use isFormValid to conditionally disable the submit button or prevent form submission in the handler. Trigger validation on blur events and before submission."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Add Cancel and Submit action buttons with appropriate styling and backend TODO comment",
+      "acceptanceCriteria": [
+        "Two buttons are present at the bottom of the modal",
+        "'Batal' button has outline or ghost styling",
+        "'Aktifkan Layanan' button has solid primary styling",
+        "'Batal' button closes the modal when clicked",
+        "'Aktifkan Layanan' handler contains the specified TODO comment",
+        "Buttons are visually distinct and properly styled"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/ActivateServiceModal.tsx",
+          "operation": "modify",
+          "description": "Add a footer section at the bottom of the modal with two buttons: (1) 'Batal' button with border, bg-transparent, and text-gray-700 classes (outline style) that calls onClose when clicked, (2) 'Aktifkan Layanan' button with bg-emerald-600, text-white, and hover:bg-emerald-700 classes (solid primary style) that calls a handleSubmit function. In handleSubmit, add the comment '// TODO: Panggil fungsi backend Motoko aktifkanLayanan()' followed by validation check and console.log of form data. Disable the submit button when isFormValid is false. Style both buttons with consistent padding, rounded corners, and transition effects."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Style the modal with clean, minimalist, professional design with generous spacing",
+      "acceptanceCriteria": [
+        "Modal has a clean, professional appearance",
+        "Input fields have generous vertical spacing between them",
+        "Border-radius values are smooth and consistent",
+        "Design feels minimalist without being sparse",
+        "Form is easy to read and navigate"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/ActivateServiceModal.tsx",
+          "operation": "modify",
+          "description": "Apply comprehensive styling to the modal: modal card should have max-w-lg width, rounded-lg corners, shadow-xl, and white background. Add a header section with text-xl font-semibold title 'Aktifkan Layanan' and padding. For the form body, use space-y-4 or space-y-5 for generous vertical spacing between form fields. Each field group should have a label with text-sm font-medium and mb-1.5, followed by the input/select with full width, px-3 py-2 padding, border rounded-md, and focus ring. Helper texts should use text-sm with appropriate spacing. The footer should have pt-6 and button spacing with gap-3. Ensure all interactive elements have smooth transitions and appropriate hover/focus states."
+        }
+      ]
+    }
+  ]
 }

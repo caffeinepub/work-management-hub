@@ -1,6 +1,6 @@
+import Iter "mo:core/Iter";
 import Map "mo:core/Map";
 import Array "mo:core/Array";
-import Iter "mo:core/Iter";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
@@ -10,9 +10,8 @@ import UserApproval "user-approval/approval";
 import Random "mo:core/Random";
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
-import Migration "migration";
+import Int "mo:core/Int";
 
-(with migration = Migration.run)
 actor {
   public type Role = {
     #superadmin;
@@ -73,6 +72,28 @@ actor {
       #dedicated;
     };
     jamOnHold : Nat;
+  };
+
+  public type ClientLayanan = {
+    id : Text;
+    nama : Text;
+    saldo : Nat;
+  };
+
+  public type LayananClientView = {
+    id : Text;
+    nama : Text;
+    unitAktif : Nat;
+    unitOnHold : Nat;
+    saldo : Nat;
+    jumlahSharing : Nat;
+    harga : Nat;
+    namaAsistenmu : Text;
+    scopeKerja : Text;
+    status : Text;
+    saldoJamEfektif : Nat;
+    jamOnHold : Nat;
+    deadline : Int;
   };
 
   public type InternalData = {
@@ -165,6 +186,31 @@ actor {
     #err : Text;
   };
 
+  public type WithdrawStatus = {
+    #Pending;
+    #Approved;
+    #Rejected;
+  };
+
+  public type WithdrawRequest = {
+    id : Text;
+    partnerId : Principal;
+    amount : Nat;
+    status : WithdrawStatus;
+    requestedAt : Int;
+    processedBy : ?Principal;
+    processedAt : ?Int;
+  };
+
+  public type PartnerWallet = {
+    partnerId : Principal;
+    availableBalance : Nat;
+    pendingBalance : Nat;
+    totalWithdrawn : Nat;
+  };
+
+  var withdrawRequestCounter = 0;
+
   let users = Map.empty<Principal, User>();
   let layanans = Map.empty<Text, Layanan>();
   let tasks = Map.empty<Text, Task>();
@@ -172,6 +218,9 @@ actor {
   let accessControlState = AccessControl.initState();
   let approvalState = UserApproval.initState(accessControlState);
   include MixinAuthorization(accessControlState);
+
+  let withdrawRequests = Map.empty<Text, WithdrawRequest>();
+  let partnerWallets = Map.empty<Principal, PartnerWallet>();
 
   /// Helper functions for ID generation
   func generateClientId() : async Text {
@@ -198,6 +247,41 @@ actor {
     "TSK-" # randomNumber.toText();
   };
 
+  func generateBalanceId() : async Text {
+    let randomActor = Random.crypto();
+    let randomNumber = await* randomActor.natRange(100000, 999999);
+    "BAL-" # randomNumber.toText();
+  };
+
+  public query ({ caller }) func getMyLayananAktif(clientId : Principal) : async [LayananClientView] {
+    // Authorization: Clients can only query their own layanan
+    // Account managers can query any client's layanan for management purposes
+    if (caller != clientId and not isAccountManager(caller)) {
+      Runtime.trap("Unauthorized: Only the client or account managers can query client layanan");
+    };
+
+    // Filter active layanans for the specific client with saldo 2 or more (at least 1 hour)
+    layanans.values().toArray().filter(
+      func(layanan) {
+        layanan.status == #active and layanan.clientId == clientId and layanan.saldoJamEfektif >= 2
+      }
+    ).map(func(layanan) {
+      let unitAktif = layanan.saldoJamEfektif / 2 : Nat;
+      let unitOnHold = layanan.jamOnHold / 2 : Nat;
+
+      {
+        layanan with
+        unitAktif;
+        unitOnHold;
+        jumlahSharing = 1; // Mocked to 1 as no sharing implementation yet
+        namaAsistenmu = "MockNamaAsistenmu";
+        status = "active";
+        saldo = layanan.saldoJamEfektif;
+      };
+    });
+  };
+
+  // (Rest of your actor code)
   private func isAuthorizedAdmin(caller : Principal) : Bool {
     switch (users.get(caller)) {
       case (null) { false };
@@ -230,6 +314,15 @@ actor {
       case (null) { false };
       case (?user) {
         user.status == #active and user.role == #partner;
+      };
+    };
+  };
+
+  private func isFinance(caller : Principal) : Bool {
+    switch (users.get(caller)) {
+      case (null) { false };
+      case (?user) {
+        user.status == #active and (user.role == #finance or user.role == #superadmin or user.role == #admin);
       };
     };
   };
@@ -894,5 +987,172 @@ actor {
         };
       }
     );
+  };
+
+  public shared ({ caller }) func addPartnerBalance(partnerId : Principal, amount : Nat) : async Text {
+    if (not isAuthorizedAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only Superadmin and Admin roles can perform this action");
+    };
+
+    switch (partnerWallets.get(partnerId)) {
+      case (null) {
+        let newWallet : PartnerWallet = {
+          partnerId;
+          availableBalance = amount;
+          pendingBalance = 0;
+          totalWithdrawn = 0;
+        };
+        partnerWallets.add(partnerId, newWallet);
+        "Wallet created and balance added successfully";
+      };
+      case (?wallet) {
+        let updatedWallet = {
+          wallet with
+          availableBalance = wallet.availableBalance + amount;
+        };
+        partnerWallets.add(partnerId, updatedWallet);
+        "Balance added to existing wallet successfully";
+      };
+    };
+  };
+
+  // Request Withdraw feature
+  public shared ({ caller }) func requestWithdraw(partnerId : Principal, amount : Nat) : async Text {
+    // Ensure only the partner can request their own withdrawal
+    if (caller != partnerId) {
+      Runtime.trap("Unauthorized: Only the partner can request their own withdrawal");
+    };
+
+    if (amount == 0) {
+      Runtime.trap("Withdrawal amount must be greater than zero");
+    };
+
+    switch (partnerWallets.get(partnerId)) {
+      case (null) {
+        Runtime.trap("Partner wallet not found");
+      };
+      case (?wallet) {
+        if (wallet.availableBalance < amount) {
+          Runtime.trap("Insufficient balance for withdrawal");
+        };
+
+        // Kunci Saldo
+        let updatedWallet = {
+          wallet with
+          availableBalance = wallet.availableBalance - amount;
+          pendingBalance = wallet.pendingBalance + amount;
+        };
+        partnerWallets.add(partnerId, updatedWallet);
+
+        // Generate unique withdrawal request ID
+        let requestId = "WD-" # Time.now().toText() # "-" # withdrawRequestCounter.toText();
+
+        let newRequest : WithdrawRequest = {
+          id = requestId;
+          partnerId;
+          amount;
+          status = #Pending;
+          requestedAt = Time.now();
+          processedBy = null;
+          processedAt = null;
+        };
+        withdrawRequests.add(requestId, newRequest);
+
+        // Increment the state counter
+        withdrawRequestCounter += 1;
+
+        requestId;
+      };
+    };
+  };
+
+  // Approve Withdraw feature
+  public shared ({ caller }) func approveWithdraw(requestId : Text, financeId : Principal) : async Text {
+    // TODO: Validasi isFinance(msg.caller)
+    if (not isFinance(caller)) {
+      Runtime.trap("Unauthorized: Only finance role can approve withdrawals");
+    };
+
+    switch (withdrawRequests.get(requestId)) {
+      case (null) {
+        Runtime.trap("Withdrawal request not found");
+      };
+      case (?withdrawRequest) {
+        if (withdrawRequest.status != #Pending) {
+          Runtime.trap("Withdrawal request is not pending");
+        };
+
+        switch (partnerWallets.get(withdrawRequest.partnerId)) {
+          case (null) {
+            Runtime.trap("Partner wallet not found");
+          };
+          case (?wallet) {
+            // EKSEKUSI SUKSES
+            let updatedWallet = {
+              wallet with
+              pendingBalance = wallet.pendingBalance - withdrawRequest.amount;
+              totalWithdrawn = wallet.totalWithdrawn + withdrawRequest.amount;
+            };
+            partnerWallets.add(withdrawRequest.partnerId, updatedWallet);
+
+            // Update withdrawal request status
+            let updatedRequest = {
+              withdrawRequest with
+              status = #Approved;
+              processedBy = ?caller;
+              processedAt = ?Time.now();
+            };
+            withdrawRequests.add(requestId, updatedRequest);
+
+            "Withdrawal approved successfully";
+          };
+        };
+      };
+    };
+  };
+
+  // Reject Withdraw feature
+  public shared ({ caller }) func rejectWithdraw(requestId : Text, financeId : Principal) : async Text {
+    // TODO: Validasi isFinance(msg.caller)
+    if (not isFinance(caller)) {
+      Runtime.trap("Unauthorized: Only finance role can reject withdrawals");
+    };
+
+    switch (withdrawRequests.get(requestId)) {
+      case (null) {
+        Runtime.trap("Withdrawal request not found");
+      };
+      case (?withdrawRequest) {
+        if (withdrawRequest.status != #Pending) {
+          Runtime.trap("Withdrawal request is not pending");
+        };
+
+        switch (partnerWallets.get(withdrawRequest.partnerId)) {
+          case (null) {
+            Runtime.trap("Partner wallet not found");
+          };
+          case (?wallet) {
+            // Refund Saldo
+            let updatedWallet = {
+              wallet with
+              pendingBalance = wallet.pendingBalance - withdrawRequest.amount;
+              availableBalance = wallet.availableBalance + withdrawRequest.amount;
+            };
+            partnerWallets.add(withdrawRequest.partnerId, updatedWallet);
+
+            // Update withdrawal request status
+            let updatedRequest = {
+              withdrawRequest with
+              status = #Rejected;
+              processedBy = ?caller;
+              processedAt = ?Time.now();
+            };
+            withdrawRequests.add(requestId, updatedRequest);
+
+            "Withdrawal rejected and balance refunded successfully";
+          };
+        };
+      };
+    };
   };
 };

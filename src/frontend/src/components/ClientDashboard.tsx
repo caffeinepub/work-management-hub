@@ -1,5 +1,5 @@
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useCurrentUser, useGetClientTasks, useCreateTask, useApproveEstimasiClient } from '../hooks/useQueries';
+import { useCurrentUser, useGetClientTasks, useCreateTask, useApproveEstimasiClient, useGetMyLayananAktif } from '../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, LogOut, Plus, CheckCircle, Clock, AlertCircle, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ export default function ClientDashboard() {
   const { clear, identity } = useInternetIdentity();
   const { data: currentUser, isLoading } = useCurrentUser();
   const { data: tasks = [], isLoading: tasksLoading } = useGetClientTasks(identity?.getPrincipal() || null);
+  const { data: myLayananAktif = [], isLoading: layananLoading } = useGetMyLayananAktif(identity?.getPrincipal() || null);
   const queryClient = useQueryClient();
   const createTaskMutation = useCreateTask();
   const approveEstimasiMutation = useApproveEstimasiClient();
@@ -172,18 +174,42 @@ export default function ClientDashboard() {
                 <DialogHeader>
                   <DialogTitle>Buat Task Baru</DialogTitle>
                   <DialogDescription>
-                    Isi detail task yang ingin Anda buat. Pastikan layanan memiliki saldo minimal 2 jam (1 Unit).
+                    Pilih layanan aktif Anda dan masukkan detail task yang ingin dibuat.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="layananId">ID Layanan</Label>
-                    <Input
-                      id="layananId"
-                      placeholder="Contoh: LAY-001"
-                      value={newTask.layananId}
-                      onChange={(e) => setNewTask({ ...newTask, layananId: e.target.value })}
-                    />
+                    <Label htmlFor="layananId">Pilih Layanan</Label>
+                    {layananLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      </div>
+                    ) : myLayananAktif.length === 0 ? (
+                      <div className="text-sm text-muted-foreground bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                        Tidak ada layanan aktif dengan saldo mencukupi (minimal 1 unit / 2 jam).
+                      </div>
+                    ) : (
+                      <Select
+                        value={newTask.layananId}
+                        onValueChange={(value) => setNewTask({ ...newTask, layananId: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih layanan aktif" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {myLayananAktif.map((layanan) => (
+                            <SelectItem key={layanan.id} value={layanan.id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{layanan.nama}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {layanan.id} • {Number(layanan.unitAktif)} unit tersedia • {layanan.namaAsistenmu}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="judul">Judul Task</Label>
@@ -206,68 +232,44 @@ export default function ClientDashboard() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                    Batal
-                  </Button>
-                  <Button onClick={handleCreateTask} disabled={createTaskMutation.isPending}>
-                    {createTaskMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Buat Task
+                  <Button
+                    type="button"
+                    onClick={handleCreateTask}
+                    disabled={createTaskMutation.isPending || !newTask.layananId}
+                  >
+                    {createTaskMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Membuat...
+                      </>
+                    ) : (
+                      'Buat Task'
+                    )}
                   </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Profil Client</CardTitle>
-                <CardDescription>Informasi akun Anda</CardDescription>
+              <CardHeader className="pb-3">
+                <CardDescription>Total Tasks</CardDescription>
+                <CardTitle className="text-3xl">{tasks.length}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">ID Client</p>
-                  <p className="font-medium">{currentUser?.idUser}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Nama</p>
-                  <p className="font-medium">{currentUser?.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Perusahaan/Bisnis</p>
-                  <p className="font-medium">{currentUser?.companyBisnis || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <p className="font-medium capitalize">{currentUser?.status}</p>
-                </div>
-              </CardContent>
             </Card>
-
             <Card>
-              <CardHeader>
-                <CardTitle>Total Tasks</CardTitle>
-                <CardDescription>Jumlah task yang Anda miliki</CardDescription>
+              <CardHeader className="pb-3">
+                <CardDescription>Sedang Dikerjakan</CardDescription>
+                <CardTitle className="text-3xl">{activeTasks}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-center h-24">
-                  <p className="text-4xl font-bold text-primary">{tasks.length}</p>
-                </div>
-              </CardContent>
             </Card>
-
             <Card>
-              <CardHeader>
-                <CardTitle>Tasks Aktif</CardTitle>
-                <CardDescription>Task yang sedang berjalan</CardDescription>
+              <CardHeader className="pb-3">
+                <CardDescription>Layanan Aktif</CardDescription>
+                <CardTitle className="text-3xl">{myLayananAktif.length}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-center h-24">
-                  <p className="text-4xl font-bold text-emerald-600">
-                    {activeTasks}
-                  </p>
-                </div>
-              </CardContent>
             </Card>
           </div>
 
@@ -275,53 +277,62 @@ export default function ClientDashboard() {
           <Card>
             <CardHeader>
               <CardTitle>Daftar Task</CardTitle>
-              <CardDescription>Semua task yang Anda buat</CardDescription>
+              <CardDescription>Kelola dan pantau semua task Anda</CardDescription>
             </CardHeader>
             <CardContent>
               {tasksLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : tasks.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Belum ada task. Buat task pertama Anda!</p>
+                <div className="text-center py-8 text-muted-foreground">
+                  Belum ada task. Klik "Buat Task Baru" untuk memulai.
                 </div>
               ) : (
                 <div className="space-y-4">
                   {tasks.map((task) => (
-                    <div key={task.id} className="border rounded-lg p-4 space-y-3">
+                    <div
+                      key={task.id}
+                      className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                    >
                       <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <h3 className="font-semibold text-lg">{task.judul}</h3>
-                          <p className="text-sm text-muted-foreground">ID: {task.id}</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg">{task.judul}</h3>
+                            {getStatusBadge(task.status)}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {task.detailPermintaan}
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span>ID: {task.id}</span>
+                            <span>Layanan: {task.layananId}</span>
+                            {task.estimasiJam > 0 && (
+                              <span>Estimasi: {Number(task.estimasiJam)} jam</span>
+                            )}
+                          </div>
                         </div>
-                        {getStatusBadge(task.status)}
-                      </div>
-                      <p className="text-sm text-[#475569]">{task.detailPermintaan}</p>
-                      <div className="flex items-center gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Layanan ID:</span>{' '}
-                          <span className="font-medium">{task.layananId}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Estimasi:</span>{' '}
-                          <span className="font-medium">{task.estimasiJam.toString()} jam</span>
-                        </div>
-                      </div>
-                      {task.status.toLowerCase().includes('menunggu') && (
-                        <div className="pt-2">
+                        {task.status === 'Awaiting Client Approval' && (
                           <Button
                             size="sm"
                             onClick={() => handleApproveEstimasi(task.id)}
                             disabled={approveEstimasiMutation.isPending}
-                            className="bg-emerald-600 hover:bg-emerald-700"
+                            className="ml-4"
                           >
-                            {approveEstimasiMutation.isPending && <Loader2 className="w-3 h-3 mr-2 animate-spin" />}
-                            <CheckCircle className="w-3 h-3 mr-2" />
-                            Setujui Estimasi
+                            {approveEstimasiMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                Memproses...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="mr-2 h-3 w-3" />
+                                Setujui Estimasi
+                              </>
+                            )}
                           </Button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -330,23 +341,6 @@ export default function ClientDashboard() {
           </Card>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="w-full py-6 px-4 sm:px-6 lg:px-8 border-t border-gray-200 bg-white mt-12">
-        <div className="max-w-7xl mx-auto text-center text-sm text-muted-foreground">
-          <p>
-            © {new Date().getFullYear()} Asistenku. Built with ❤️ using{' '}
-            <a
-              href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              caffeine.ai
-            </a>
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

@@ -40,6 +40,21 @@ export interface InternalData {
   'scopeKerja' : string,
   'linkDriveInternal' : string,
 }
+export interface LayananClientView {
+  'id' : string,
+  'status' : string,
+  'unitAktif' : bigint,
+  'harga' : bigint,
+  'nama' : string,
+  'jumlahSharing' : bigint,
+  'deadline' : bigint,
+  'saldo' : bigint,
+  'scopeKerja' : string,
+  'jamOnHold' : bigint,
+  'unitOnHold' : bigint,
+  'namaAsistenmu' : string,
+  'saldoJamEfektif' : bigint,
+}
 export type ResponPartnerResult = { 'ok' : string } |
   { 'err' : string };
 export type Role = { 'client' : null } |
@@ -97,8 +112,10 @@ export type UserRole = { 'admin' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addPartnerBalance' : ActorMethod<[Principal, bigint], string>,
   'approveEstimasiClient' : ActorMethod<[string], ApproveEstimasiClientResult>,
   'approveUser' : ActorMethod<[Principal], undefined>,
+  'approveWithdraw' : ActorMethod<[string, Principal], string>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'assignPartner' : ActorMethod<
     [string, Principal, string, bigint, string, bigint, string],
@@ -114,6 +131,7 @@ export interface _SERVICE {
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getClientTasks' : ActorMethod<[Principal], Array<TaskClientView>>,
   'getCurrentUser' : ActorMethod<[], [] | [User]>,
+  'getMyLayananAktif' : ActorMethod<[Principal], Array<LayananClientView>>,
   'getPendingRequests' : ActorMethod<[], Array<User>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [User]>,
   'inputEstimasiAM' : ActorMethod<[string, bigint], InputEstimasiAMResult>,
@@ -122,7 +140,9 @@ export interface _SERVICE {
   'listApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
   'registerInternalStaff' : ActorMethod<[Principal, string, string], undefined>,
   'rejectUser' : ActorMethod<[Principal], undefined>,
+  'rejectWithdraw' : ActorMethod<[string, Principal], string>,
   'requestApproval' : ActorMethod<[], undefined>,
+  'requestWithdraw' : ActorMethod<[Principal, bigint], string>,
   'responPartner' : ActorMethod<[string, boolean], ResponPartnerResult>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'selfRegisterClient' : ActorMethod<[string, string], undefined>,

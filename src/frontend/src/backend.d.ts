@@ -64,6 +64,21 @@ export type CompleteTaskResult = {
     __kind__: "err";
     err: string;
 };
+export interface LayananClientView {
+    id: string;
+    status: string;
+    unitAktif: bigint;
+    harga: bigint;
+    nama: string;
+    jumlahSharing: bigint;
+    deadline: bigint;
+    saldo: bigint;
+    scopeKerja: string;
+    jamOnHold: bigint;
+    unitOnHold: bigint;
+    namaAsistenmu: string;
+    saldoJamEfektif: bigint;
+}
 export interface UserApprovalInfo {
     status: ApprovalStatus;
     principal: Principal;
@@ -138,8 +153,10 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    addPartnerBalance(partnerId: Principal, amount: bigint): Promise<string>;
     approveEstimasiClient(taskId: string): Promise<ApproveEstimasiClientResult>;
     approveUser(principalId: Principal): Promise<void>;
+    approveWithdraw(requestId: string, financeId: Principal): Promise<string>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     assignPartner(taskId: string, partnerId: Principal, scopeKerja: string, deadline: bigint, linkDriveInternal: string, jamEfektif: bigint, levelPartner: string): Promise<AssignPartnerResult>;
     claimSuperadmin(): Promise<void>;
@@ -149,6 +166,7 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getClientTasks(clientId: Principal): Promise<Array<TaskClientView>>;
     getCurrentUser(): Promise<User | null>;
+    getMyLayananAktif(clientId: Principal): Promise<Array<LayananClientView>>;
     getPendingRequests(): Promise<Array<User>>;
     getUserProfile(principalId: Principal): Promise<User | null>;
     inputEstimasiAM(taskId: string, estimasiJam: bigint): Promise<InputEstimasiAMResult>;
@@ -157,7 +175,9 @@ export interface backendInterface {
     listApprovals(): Promise<Array<UserApprovalInfo>>;
     registerInternalStaff(principalId: Principal, name: string, role: string): Promise<void>;
     rejectUser(principalId: Principal): Promise<void>;
+    rejectWithdraw(requestId: string, financeId: Principal): Promise<string>;
     requestApproval(): Promise<void>;
+    requestWithdraw(partnerId: Principal, amount: bigint): Promise<string>;
     responPartner(taskId: string, acceptance: boolean): Promise<ResponPartnerResult>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     selfRegisterClient(name: string, company: string): Promise<void>;

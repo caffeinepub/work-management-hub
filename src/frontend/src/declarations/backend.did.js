@@ -85,6 +85,21 @@ export const User = IDL.Record({
   'principalId' : IDL.Principal,
   'kotaDomisili' : IDL.Opt(IDL.Text),
 });
+export const LayananClientView = IDL.Record({
+  'id' : IDL.Text,
+  'status' : IDL.Text,
+  'unitAktif' : IDL.Nat,
+  'harga' : IDL.Nat,
+  'nama' : IDL.Text,
+  'jumlahSharing' : IDL.Nat,
+  'deadline' : IDL.Int,
+  'saldo' : IDL.Nat,
+  'scopeKerja' : IDL.Text,
+  'jamOnHold' : IDL.Nat,
+  'unitOnHold' : IDL.Nat,
+  'namaAsistenmu' : IDL.Text,
+  'saldoJamEfektif' : IDL.Nat,
+});
 export const InputEstimasiAMResult = IDL.Variant({
   'ok' : IDL.Text,
   'err' : IDL.Text,
@@ -120,12 +135,14 @@ export const UpdateTaskStatusResult = IDL.Variant({
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'addPartnerBalance' : IDL.Func([IDL.Principal, IDL.Nat], [IDL.Text], []),
   'approveEstimasiClient' : IDL.Func(
       [IDL.Text],
       [ApproveEstimasiClientResult],
       [],
     ),
   'approveUser' : IDL.Func([IDL.Principal], [], []),
+  'approveWithdraw' : IDL.Func([IDL.Text, IDL.Principal], [IDL.Text], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'assignPartner' : IDL.Func(
       [IDL.Text, IDL.Principal, IDL.Text, IDL.Int, IDL.Text, IDL.Nat, IDL.Text],
@@ -147,6 +164,11 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getCurrentUser' : IDL.Func([], [IDL.Opt(User)], ['query']),
+  'getMyLayananAktif' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Vec(LayananClientView)],
+      ['query'],
+    ),
   'getPendingRequests' : IDL.Func([], [IDL.Vec(User)], ['query']),
   'getUserProfile' : IDL.Func([IDL.Principal], [IDL.Opt(User)], ['query']),
   'inputEstimasiAM' : IDL.Func(
@@ -163,7 +185,9 @@ export const idlService = IDL.Service({
       [],
     ),
   'rejectUser' : IDL.Func([IDL.Principal], [], []),
+  'rejectWithdraw' : IDL.Func([IDL.Text, IDL.Principal], [IDL.Text], []),
   'requestApproval' : IDL.Func([], [], []),
+  'requestWithdraw' : IDL.Func([IDL.Principal, IDL.Nat], [IDL.Text], []),
   'responPartner' : IDL.Func([IDL.Text, IDL.Bool], [ResponPartnerResult], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'selfRegisterClient' : IDL.Func([IDL.Text, IDL.Text], [], []),
@@ -251,6 +275,21 @@ export const idlFactory = ({ IDL }) => {
     'principalId' : IDL.Principal,
     'kotaDomisili' : IDL.Opt(IDL.Text),
   });
+  const LayananClientView = IDL.Record({
+    'id' : IDL.Text,
+    'status' : IDL.Text,
+    'unitAktif' : IDL.Nat,
+    'harga' : IDL.Nat,
+    'nama' : IDL.Text,
+    'jumlahSharing' : IDL.Nat,
+    'deadline' : IDL.Int,
+    'saldo' : IDL.Nat,
+    'scopeKerja' : IDL.Text,
+    'jamOnHold' : IDL.Nat,
+    'unitOnHold' : IDL.Nat,
+    'namaAsistenmu' : IDL.Text,
+    'saldoJamEfektif' : IDL.Nat,
+  });
   const InputEstimasiAMResult = IDL.Variant({
     'ok' : IDL.Text,
     'err' : IDL.Text,
@@ -286,12 +325,14 @@ export const idlFactory = ({ IDL }) => {
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'addPartnerBalance' : IDL.Func([IDL.Principal, IDL.Nat], [IDL.Text], []),
     'approveEstimasiClient' : IDL.Func(
         [IDL.Text],
         [ApproveEstimasiClientResult],
         [],
       ),
     'approveUser' : IDL.Func([IDL.Principal], [], []),
+    'approveWithdraw' : IDL.Func([IDL.Text, IDL.Principal], [IDL.Text], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'assignPartner' : IDL.Func(
         [
@@ -321,6 +362,11 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getCurrentUser' : IDL.Func([], [IDL.Opt(User)], ['query']),
+    'getMyLayananAktif' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Vec(LayananClientView)],
+        ['query'],
+      ),
     'getPendingRequests' : IDL.Func([], [IDL.Vec(User)], ['query']),
     'getUserProfile' : IDL.Func([IDL.Principal], [IDL.Opt(User)], ['query']),
     'inputEstimasiAM' : IDL.Func(
@@ -337,7 +383,9 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'rejectUser' : IDL.Func([IDL.Principal], [], []),
+    'rejectWithdraw' : IDL.Func([IDL.Text, IDL.Principal], [IDL.Text], []),
     'requestApproval' : IDL.Func([], [], []),
+    'requestWithdraw' : IDL.Func([IDL.Principal, IDL.Nat], [IDL.Text], []),
     'responPartner' : IDL.Func([IDL.Text, IDL.Bool], [ResponPartnerResult], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'selfRegisterClient' : IDL.Func([IDL.Text, IDL.Text], [], []),

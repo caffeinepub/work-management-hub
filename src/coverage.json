@@ -1,51 +1,112 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-22T12:26:54.762Z",
+  "generatedAt": "2026-02-22T16:18:53.616Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 0,
+    "total": 8,
+    "implemented": 8,
     "items": [
       {
+        "id": "REQ-1",
+        "summary": "Create a self-contained modal component 'ActivateServiceModal' in frontend/src/components using React State (isOpen, setIsOpen) and Tailwind CSS. Include a semi-transparent black overlay background.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Add form fields in the modal in this exact order: (1) Select dropdown 'Pilih Client' with mock options 'PT Maju' and 'CV Sejahtera', (2) Select dropdown 'Pilih Asistenmu' with mock options 'Budi' and 'Siti', (3) Select dropdown 'Tipe Layanan' with options: Tenang, Rapi, Fokus, Jaga, Efisien, (4) Number input 'Jumlah Unit Pembelian', (5) Number input 'Harga Jual Per Unit (Rp)'.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Below the 'Jumlah Unit Pembelian' input, display reactive helper text in gray color showing 'Setara dengan [Jumlah Unit * 2] Jam Efektif' that updates automatically as the user changes the unit quantity.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Below the 'Harga Jual Per Unit' input, display reactive helper text in bold primary color showing 'Total Tagihan (GMV): Rp [Jumlah Unit * Harga Jual]' with thousand separator formatting (e.g., 1.500.000) that updates automatically as the user changes either unit quantity or price.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ]
+      },
+      {
         "id": "REQ-5",
-        "summary": "Implement updateTaskStatus function that accepts taskId and newStatus (TaskStatus) as parameters, updates the task's status field to the new status value for managing revision cycles (OnProgress → InQA → ClientReview → Revision → OnProgress)",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "In the 'Harga Jual Per Unit' input field, automatically format the display value with thousand separators (dots) as the user types (e.g., typing 1500000 shows as 1.500.000), while maintaining the underlying state value as a pure number.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ]
       },
       {
         "id": "REQ-6",
-        "summary": "Implement completeTask function as the financial trigger that: (1) accepts taskId parameter, (2) retrieves task and layanan data, (3) burns units by subtracting task.estimasiJam from layanan.jamOnHold, (4) calculates partner payment using jamEfektif from task.internalData multiplied by hourly rate based on partner level (Junior: 35,000, Senior: 55,000, Expert: 75,000), (5) includes pseudo-code comment for adding pendapatanPartner to partner balance, (6) changes task status to Completed, and (7) returns success message with financial calculations",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Implement form validation: all fields are required (cannot be empty), 'Jumlah Unit Pembelian' must be at least 1 (cannot be 0 or negative), 'Harga Jual Per Unit' must be greater than 0. Display validation errors appropriately.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ]
       },
       {
         "id": "REQ-7",
-        "summary": "Implement getClientTasks query function that: (1) accepts clientId (Principal) parameter, (2) filters tasks by clientId, (3) maps each task to TaskClientView type, (4) implements masking logic where PendingPartner and RejectedByPartner statuses display as 'Sedang Didelegasikan' (hiding rejections from client), (5) converts other statuses to user-friendly strings (OnProgress → 'Sedang Dikerjakan', InQA → 'Quality Assurance'), (6) excludes internalData field from the returned view, and (7) returns array of TaskClientView with clear comments marking the masking logic",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Add two action buttons at the bottom of the modal: (1) 'Batal' button with outline/ghost styling that closes the modal, (2) 'Aktifkan Layanan' button with solid primary styling that includes a TODO comment '// TODO: Panggil fungsi backend Motoko aktifkanLayanan()' in its click handler.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ]
+      },
+      {
+        "id": "REQ-8",
+        "summary": "Style the modal with a clean, minimalist, professional design using generous spacing between inputs, smooth border-radius, and ensure the overall layout is legible and user-friendly for Finance/Superadmin roles.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ActivateServiceModal.tsx"
+        ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/ClientDashboard.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/components/ActivateServiceModal.tsx",
+    "frontend/src/components/InternalDashboard.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

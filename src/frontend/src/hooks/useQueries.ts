@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { UserProfile, UserRole, User, TaskClientView, CreateTaskResult, InputEstimasiAMResult, ApproveEstimasiClientResult, AssignPartnerResult, ResponPartnerResult, UpdateTaskStatusResult, CompleteTaskResult, TaskStatus } from '../backend';
+import { UserProfile, UserRole, User, TaskClientView, CreateTaskResult, InputEstimasiAMResult, ApproveEstimasiClientResult, AssignPartnerResult, ResponPartnerResult, UpdateTaskStatusResult, CompleteTaskResult, TaskStatus, LayananClientView } from '../backend';
 import { Principal } from '@icp-sdk/core/principal';
 
 export function useGetCallerUserProfile() {
@@ -82,7 +82,35 @@ export function usePendingRequests() {
   });
 }
 
-// Task Management Queries
+export function useApproveUser() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (principalId: Principal) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.approveUser(principalId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
+    },
+  });
+}
+
+export function useRejectUser() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (principalId: Principal) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.rejectUser(principalId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
+    },
+  });
+}
 
 export function useGetClientTasks(clientId: Principal | null) {
   const { actor, isFetching: actorFetching } = useActor();
@@ -90,7 +118,7 @@ export function useGetClientTasks(clientId: Principal | null) {
   return useQuery<TaskClientView[]>({
     queryKey: ['clientTasks', clientId?.toString()],
     queryFn: async () => {
-      if (!actor || !clientId) throw new Error('Actor or clientId not available');
+      if (!actor || !clientId) return [];
       return actor.getClientTasks(clientId);
     },
     enabled: !!actor && !actorFetching && !!clientId,
@@ -101,28 +129,23 @@ export function useCreateTask() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
-  return useMutation<CreateTaskResult, Error, { clientId: Principal; layananId: string; judul: string; detailPermintaan: string }>({
-    mutationFn: async ({ clientId, layananId, judul, detailPermintaan }) => {
+  return useMutation({
+    mutationFn: async ({
+      clientId,
+      layananId,
+      judul,
+      detailPermintaan,
+    }: {
+      clientId: Principal;
+      layananId: string;
+      judul: string;
+      detailPermintaan: string;
+    }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.createTask(clientId, layananId, judul, detailPermintaan);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientTasks'] });
-    },
-  });
-}
-
-export function useInputEstimasiAM() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation<InputEstimasiAMResult, Error, { taskId: string; estimasiJam: bigint }>({
-    mutationFn: async ({ taskId, estimasiJam }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.inputEstimasiAM(taskId, estimasiJam);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientTasks'] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['clientTasks', variables.clientId.toString()] });
     },
   });
 }
@@ -131,8 +154,8 @@ export function useApproveEstimasiClient() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
-  return useMutation<ApproveEstimasiClientResult, Error, { taskId: string }>({
-    mutationFn: async ({ taskId }) => {
+  return useMutation({
+    mutationFn: async ({ taskId }: { taskId: string }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.approveEstimasiClient(taskId);
     },
@@ -142,64 +165,63 @@ export function useApproveEstimasiClient() {
   });
 }
 
-export function useAssignPartner() {
+export function useRequestWithdraw() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
-  return useMutation<AssignPartnerResult, Error, { taskId: string; partnerId: Principal; scopeKerja: string; deadline: bigint; linkDriveInternal: string; jamEfektif: bigint; levelPartner: string }>({
-    mutationFn: async ({ taskId, partnerId, scopeKerja, deadline, linkDriveInternal, jamEfektif, levelPartner }) => {
+  return useMutation({
+    mutationFn: async ({ partnerId, amount }: { partnerId: Principal; amount: bigint }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.assignPartner(taskId, partnerId, scopeKerja, deadline, linkDriveInternal, jamEfektif, levelPartner);
+      return actor.requestWithdraw(partnerId, amount);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['partnerWallet'] });
+      queryClient.invalidateQueries({ queryKey: ['withdrawRequests'] });
     },
   });
 }
 
-export function useResponPartner() {
+export function useApproveWithdraw() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
-  return useMutation<ResponPartnerResult, Error, { taskId: string; acceptance: boolean }>({
-    mutationFn: async ({ taskId, acceptance }) => {
+  return useMutation({
+    mutationFn: async ({ requestId, financeId }: { requestId: string; financeId: Principal }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.responPartner(taskId, acceptance);
+      return actor.approveWithdraw(requestId, financeId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['withdrawRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['partnerWallet'] });
     },
   });
 }
 
-// Part 3: New hooks for task status updates and completion
-
-export function useUpdateTaskStatus() {
+export function useRejectWithdraw() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
-  return useMutation<UpdateTaskStatusResult, Error, { taskId: string; newStatus: TaskStatus }>({
-    mutationFn: async ({ taskId, newStatus }) => {
+  return useMutation({
+    mutationFn: async ({ requestId, financeId }: { requestId: string; financeId: Principal }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updateTaskStatus(taskId, newStatus);
+      return actor.rejectWithdraw(requestId, financeId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['withdrawRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['partnerWallet'] });
     },
   });
 }
 
-export function useCompleteTask() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
+export function useGetMyLayananAktif(clientId: Principal | null) {
+  const { actor, isFetching: actorFetching } = useActor();
 
-  return useMutation<CompleteTaskResult, Error, { taskId: string }>({
-    mutationFn: async ({ taskId }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.completeTask(taskId);
+  return useQuery<LayananClientView[]>({
+    queryKey: ['myLayananAktif', clientId?.toString()],
+    queryFn: async () => {
+      if (!actor || !clientId) return [];
+      return actor.getMyLayananAktif(clientId);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clientTasks'] });
-    },
+    enabled: !!actor && !actorFetching && !!clientId,
   });
 }

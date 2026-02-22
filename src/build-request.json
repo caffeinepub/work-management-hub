@@ -1,88 +1,188 @@
 {
   "kind": "build_request",
-  "title": "Implement Part 3: Task Status Updates, Financial Completion, and Client View Masking",
-  "projectName": "Work Management Hub",
+  "title": "Create Service Activation Form Modal with Reactive Calculations",
+  "projectName": "Asistenmu",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-5",
-      "text": "Implement updateTaskStatus function that accepts taskId and newStatus (TaskStatus) as parameters, updates the task's status field to the new status value for managing revision cycles (OnProgress → InQA → ClientReview → Revision → OnProgress)",
-      "target": "backend",
+      "id": "REQ-1",
+      "text": "Create a self-contained modal component 'ActivateServiceModal' in frontend/src/components using React State (isOpen, setIsOpen) and Tailwind CSS. Include a semi-transparent black overlay background.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-recent"
+          "msg-latest"
         ],
         "quotes": [
-          "updateTaskStatus (Update Call - Dipanggil AM/Client): Menerima parameter `taskId` dan `newStatus` (TaskStatus). Logic: Fungsi ini digunakan untuk memutar siklus revisi"
+          "Komponen Modal: Buat dari scratch menggunakan React State (isOpen, setIsOpen) dan Tailwind CSS murni",
+          "Pastikan ada overlay latar belakang hitam transparan"
         ]
       },
       "acceptanceCriteria": [
-        "Function accepts taskId and newStatus parameters",
-        "Updates the task's status field to newStatus",
-        "Returns success or error result"
+        "Modal component is self-contained without external UI libraries (no Headless UI/Radix UI)",
+        "Modal uses React state for open/close control",
+        "Semi-transparent black overlay is present behind modal content",
+        "Modal is built with TypeScript and Tailwind CSS"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Add form fields in the modal in this exact order: (1) Select dropdown 'Pilih Client' with mock options 'PT Maju' and 'CV Sejahtera', (2) Select dropdown 'Pilih Asistenmu' with mock options 'Budi' and 'Siti', (3) Select dropdown 'Tipe Layanan' with options: Tenang, Rapi, Fokus, Jaga, Efisien, (4) Number input 'Jumlah Unit Pembelian', (5) Number input 'Harga Jual Per Unit (Rp)'.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "Select/Dropdown 'Pilih Client' (Gunakan mock data: PT Maju, CV Sejahtera)",
+          "Select/Dropdown 'Pilih Asistenmu' (Gunakan mock data: Budi, Siti)",
+          "Select/Dropdown 'Tipe Layanan' (Option: Tenang, Rapi, Fokus, Jaga, Efisien)",
+          "Input Number 'Jumlah Unit Pembelian'",
+          "Input Number 'Harga Jual Per Unit (Rp)'"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All five form fields appear in the specified order",
+        "Client dropdown contains exactly 'PT Maju' and 'CV Sejahtera'",
+        "Asistenmu dropdown contains exactly 'Budi' and 'Siti'",
+        "Service Type dropdown contains all five options: Tenang, Rapi, Fokus, Jaga, Efisien",
+        "Both number inputs accept numeric values only"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Below the 'Jumlah Unit Pembelian' input, display reactive helper text in gray color showing 'Setara dengan [Jumlah Unit * 2] Jam Efektif' that updates automatically as the user changes the unit quantity.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "UX Magic (Wajib): Buat state reaktif. Tepat di bawah input ini, tampilkan teks bantuan berwarna abu-abu: 'Setara dengan [Jumlah Unit * 2] Jam Efektif'"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Helper text appears directly below the unit quantity input",
+        "Text color is gray",
+        "Calculation shows unit quantity multiplied by 2",
+        "Text updates in real-time as user types in the unit field"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Below the 'Harga Jual Per Unit' input, display reactive helper text in bold primary color showing 'Total Tagihan (GMV): Rp [Jumlah Unit * Harga Jual]' with thousand separator formatting (e.g., 1.500.000) that updates automatically as the user changes either unit quantity or price.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "UX Magic (Wajib): Buat state reaktif. Tepat di bawah input ini, tampilkan teks bantuan tebal/warna primary: 'Total Tagihan (GMV): Rp [Jumlah Unit * Harga Jual]'. Format angka dengan pemisah ribuan Rupiah"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Helper text appears directly below the price input",
+        "Text is bold and uses primary theme color",
+        "GMV calculation multiplies unit quantity by price per unit",
+        "Numbers display with dot (.) as thousand separator (e.g., 1.500.000)",
+        "Text updates in real-time as user changes unit or price values"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "In the 'Harga Jual Per Unit' input field, automatically format the display value with thousand separators (dots) as the user types (e.g., typing 1500000 shows as 1.500.000), while maintaining the underlying state value as a pure number.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "Tambahan UX: Saat mengetik di field Harga Jual, format otomatis tampilannya menggunakan pemisah ribuan (contoh: 1.500.000) agar Finance tidak pusing menghitung nol, tetapi nilai state aslinya tetap number murni"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Input displays formatted value with dots as thousand separators",
+        "User can type naturally and formatting applies automatically",
+        "Internal state stores the numeric value without formatting",
+        "Formatting updates in real-time as user types"
       ]
     },
     {
       "id": "REQ-6",
-      "text": "Implement completeTask function as the financial trigger that: (1) accepts taskId parameter, (2) retrieves task and layanan data, (3) burns units by subtracting task.estimasiJam from layanan.jamOnHold, (4) calculates partner payment using jamEfektif from task.internalData multiplied by hourly rate based on partner level (Junior: 35,000, Senior: 55,000, Expert: 75,000), (5) includes pseudo-code comment for adding pendapatanPartner to partner balance, (6) changes task status to Completed, and (7) returns success message with financial calculations",
-      "target": "backend",
+      "text": "Implement form validation: all fields are required (cannot be empty), 'Jumlah Unit Pembelian' must be at least 1 (cannot be 0 or negative), 'Harga Jual Per Unit' must be greater than 0. Display validation errors appropriately.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-recent"
+          "msg-latest"
         ],
         "quotes": [
-          "completeTask (Update Call - THE FINANCIAL TRIGGER)",
-          "Eksekusi Burn Unit: `layanan.jamOnHold -= task.estimasiJam`",
-          "Kalkulasi Pembayaran Partner: Ambil nilai `jamEfektif` dari `task.internalData`. Tentukan hourly rate berdasarkan level Partner (Gunakan mockup ini: Junior = 35_000, Senior = 55_000, Expert = 75_000)"
+          "Semua field wajib diisi (required)",
+          "'Jumlah Unit Pembelian': Minimal angka 1. (Tidak boleh 0 atau minus)",
+          "'Harga Jual Per Unit': Minimal > 0"
         ]
       },
       "acceptanceCriteria": [
-        "Function accepts taskId parameter",
-        "Burns units from layanan.jamOnHold by subtracting task.estimasiJam",
-        "Calculates partner payment: jamEfektif × hourly rate (Junior: 35k, Senior: 55k, Expert: 75k)",
-        "Includes TODO pseudo-code comment for updating partner balance",
-        "Sets task status to Completed",
-        "Returns success message with financial calculation details",
-        "Includes clear comments marking the financial trigger logic"
+        "Form cannot be submitted if any field is empty",
+        "Unit quantity input rejects values less than 1",
+        "Price input rejects values less than or equal to 0",
+        "Validation errors are displayed to the user",
+        "Submit button is disabled or validation prevents submission when requirements are not met"
       ]
     },
     {
       "id": "REQ-7",
-      "text": "Implement getClientTasks query function that: (1) accepts clientId (Principal) parameter, (2) filters tasks by clientId, (3) maps each task to TaskClientView type, (4) implements masking logic where PendingPartner and RejectedByPartner statuses display as 'Sedang Didelegasikan' (hiding rejections from client), (5) converts other statuses to user-friendly strings (OnProgress → 'Sedang Dikerjakan', InQA → 'Quality Assurance'), (6) excludes internalData field from the returned view, and (7) returns array of TaskClientView with clear comments marking the masking logic",
-      "target": "backend",
+      "text": "Add two action buttons at the bottom of the modal: (1) 'Batal' button with outline/ghost styling that closes the modal, (2) 'Aktifkan Layanan' button with solid primary styling that includes a TODO comment '// TODO: Panggil fungsi backend Motoko aktifkanLayanan()' in its click handler.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-recent"
+          "msg-latest"
         ],
         "quotes": [
-          "getClientTasks (Query Call - THE MASKING VIEW)",
-          "ATURAN MASKING STATUS (Wajib): Jika status `#PendingPartner` ATAU `#RejectedByPartner`, maka field `statusTampil` harus berisi string 'Sedang Didelegasikan'",
-          "Pastikan field rahasia seperti `internalData` TIDAK MASUK ke dalam return view ini"
+          "Tombol 'Batal' (Desain outline/ghost)",
+          "Tombol 'Aktifkan Layanan' (Desain solid primary)",
+          "Berikan komentar pada handler tombol ini: `// TODO: Panggil fungsi backend Motoko aktifkanLayanan()`"
         ]
       },
       "acceptanceCriteria": [
-        "Function accepts clientId parameter",
-        "Filters tasks belonging to the specified client",
-        "Maps tasks to TaskClientView type",
-        "Masks PendingPartner and RejectedByPartner statuses as 'Sedang Didelegasikan'",
-        "Converts other statuses to user-friendly display strings",
-        "Excludes internalData field from the returned view",
-        "Returns array of TaskClientView objects",
-        "Includes clear comments marking the masking logic"
+        "Two buttons are present at the bottom of the modal",
+        "'Batal' button has outline or ghost styling",
+        "'Aktifkan Layanan' button has solid primary styling",
+        "'Batal' button closes the modal when clicked",
+        "'Aktifkan Layanan' handler contains the specified TODO comment",
+        "Buttons are visually distinct and properly styled"
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "Style the modal with a clean, minimalist, professional design using generous spacing between inputs, smooth border-radius, and ensure the overall layout is legible and user-friendly for Finance/Superadmin roles.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "Buat tampilan form di dalam Modal/Card yang clean, minimalis, dan profesional. Berikan margin yang lega antar input, gunakan border-radius yang halus"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Modal has a clean, professional appearance",
+        "Input fields have generous vertical spacing between them",
+        "Border-radius values are smooth and consistent",
+        "Design feels minimalist without being sparse",
+        "Form is easy to read and navigate"
       ]
     }
   ],
   "constraints": [
-    "Maintain consistency with existing Task and Layanan data structures",
-    "Use hourly rates exactly as specified: Junior = 35,000, Senior = 55,000, Expert = 75,000",
-    "Ensure internalData field is never exposed in client-facing queries",
-    "Keep all logic within the single-actor architecture in backend/main.mo"
+    "Do not use external UI component libraries like Headless UI or Radix UI for the modal",
+    "Modal must be built using only React State and Tailwind CSS",
+    "Price input must maintain numeric state internally while displaying formatted text",
+    "All mock data values must match exactly as specified (PT Maju, CV Sejahtera, Budi, Siti, Tenang, Rapi, Fokus, Jaga, Efisien)"
   ],
   "nonGoals": [
-    "Implementing actual partner balance updates (pseudo-code comment only)",
-    "Creating new frontend components for these functions",
-    "Modifying existing task creation or approval flows",
-    "Adding database persistence beyond in-memory state"
+    "Implementing the actual backend aktifkanLayanan() function",
+    "Connecting to real client or staff data from the backend",
+    "Adding role-based access control to the modal component itself",
+    "Implementing edit or delete functionality for services"
   ],
   "imageRequirements": {
     "required": [],
