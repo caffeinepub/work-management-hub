@@ -245,7 +245,6 @@ actor {
   let withdrawRequests = Map.empty<Text, WithdrawRequest>();
   let partnerWallets = Map.empty<Principal, PartnerWallet>();
 
-  /// Helper functions for ID generation
   func generateClientId() : async Text {
     let randomActor = Random.crypto();
     let randomNumber = await* randomActor.natRange(111111, 999999);
@@ -277,8 +276,8 @@ actor {
   };
 
   public shared ({ caller }) func approveUser(principalId : Principal) : async () {
-    if (not isSuperAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only Superadmins can approve users");
+    if (not isSuperAdminOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only SuperAdmins and Admins can approve users");
     };
 
     switch (users.get(principalId)) {
@@ -320,7 +319,12 @@ actor {
         let accessControlRole = switch (role) {
           case (#superadmin) { #admin };
           case (#admin) { #admin };
-          case (_) { #user };
+          case (#finance) { #user };
+          case (#concierge) { #user };
+          case (#strategicPartner) { #user };
+          case (#asistenmu) { #user };
+          case (#client) { #user };
+          case (#partner) { #user };
         };
         AccessControl.assignRole(accessControlState, caller, principalId, accessControlRole);
       };
@@ -328,12 +332,10 @@ actor {
   };
 
   public query ({ caller }) func getMyLayananAktif() : async [LayananClientView] {
-    // Authorization: Only active clients can query their own layanan
     if (not isActiveClient(caller)) {
       Runtime.trap("Unauthorized: Only active clients can view their services");
     };
 
-    // Filter active layanans for the caller with saldo 2 or more (at least 1 hour)
     layanans.values().toArray().filter(
       func(layanan) {
         layanan.status == #active and layanan.clientId == caller and layanan.saldoJamEfektif >= 2
@@ -355,7 +357,6 @@ actor {
   };
 
   public query ({ caller }) func getClientMainService() : async ?Layanan {
-    // Authorization: Only active clients can query their own main service
     if (not isActiveClient(caller)) {
       Runtime.trap("Unauthorized: Only active clients can view their main service");
     };
@@ -370,7 +371,7 @@ actor {
     };
   };
 
-  private func isAdmin(caller : Principal) : Bool {
+  private func isSuperAdminOrAdmin(caller : Principal) : Bool {
     switch (users.get(caller)) {
       case (null) { false };
       case (?user) {
@@ -464,7 +465,7 @@ actor {
   };
 
   public query ({ caller }) func getPendingRequests() : async [User] {
-    if (not isAdmin(caller)) {
+    if (not isSuperAdminOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only Superadmin and Admin roles can perform this action");
     };
 
@@ -482,7 +483,7 @@ actor {
   };
 
   public shared ({ caller }) func rejectUser(principalId : Principal) : async () {
-    if (not isAdmin(caller)) {
+    if (not isSuperAdminOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only Superadmin and Admin roles can perform this action");
     };
 
@@ -526,7 +527,7 @@ actor {
   };
 
   public shared ({ caller }) func updateUserRole(principalId : Principal, newRole : Role) : async () {
-    if (not isAdmin(caller)) {
+    if (not isSuperAdminOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only Superadmin and Admin roles can perform this action");
     };
 
@@ -539,7 +540,12 @@ actor {
         let accessControlRole = switch (updatedUser.role) {
           case (#superadmin) { #admin };
           case (#admin) { #admin };
-          case (_) { #user };
+          case (#finance) { #user };
+          case (#concierge) { #user };
+          case (#strategicPartner) { #user };
+          case (#asistenmu) { #user };
+          case (#client) { #user };
+          case (#partner) { #user };
         };
         AccessControl.assignRole(accessControlState, caller, principalId, accessControlRole);
       };
@@ -568,7 +574,7 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view profiles");
     };
-    if (caller != principalId and not isAdmin(caller)) {
+    if (caller != principalId and not isSuperAdminOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
     users.get(principalId);
@@ -642,7 +648,7 @@ actor {
   };
 
   public shared ({ caller }) func registerInternalStaff(principalId : Principal, name : Text, role : Text) : async () {
-    if (not isAdmin(caller)) {
+    if (not isSuperAdminOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only Superadmin and Admin roles can create internal users");
     };
 
@@ -714,7 +720,12 @@ actor {
     let accessControlRole = switch (roleInternalUser) {
       case (#superadmin) { #admin };
       case (#admin) { #admin };
-      case (_) { #user };
+      case (#finance) { #user };
+      case (#concierge) { #user };
+      case (#strategicPartner) { #user };
+      case (#asistenmu) { #user };
+      case (#client) { #user };
+      case (#partner) { #user };
     };
 
     AccessControl.assignRole(accessControlState, caller, principalId, accessControlRole);
@@ -739,7 +750,7 @@ actor {
   };
 
   public query ({ caller }) func listApprovals() : async [UserApproval.UserApprovalInfo] {
-    if (not isAdmin(caller)) {
+    if (not isSuperAdminOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins and superadmins can perform this action");
     };
     UserApproval.listApprovals(approvalState);
@@ -897,8 +908,8 @@ actor {
   };
 
   public shared ({ caller }) func createTask(clientId : Principal, layananId : Text, judul : Text, detailPermintaan : Text) : async CreateTaskResult {
-    if (not isActiveClient(caller) and not isAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only active clients or admins can create tasks");
+    if (not isActiveClient(caller) and not isSuperAdminOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only active clients or superadmins/admins can create tasks");
     };
 
     if (isActiveClient(caller) and caller != clientId) {
@@ -1228,7 +1239,7 @@ actor {
   };
 
   public shared ({ caller }) func addPartnerBalance(partnerId : Principal, amount : Nat) : async Text {
-    if (not isAdmin(caller)) {
+    if (not isSuperAdminOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only Superadmin and Admin roles can perform this action");
     };
 

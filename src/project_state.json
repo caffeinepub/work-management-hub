@@ -1,74 +1,44 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Premium Boutique project - a user management and client dashboard system with role-based access control (Superadmin, Client, Asistenmu). Currently fixing 'Invalid requested role' error in user approval flow by synchronizing frontend-backend role handling and updating UI to display user details properly.",
+  "summary": "Backend aplikasi dengan sistem role-based access control (Admin, Superadmin, User). Sedang memperbaiki bug otorisasi di fungsi helper backend Motoko yang masih membatasi assign user role hanya untuk Admin, padahal Superadmin seharusnya juga bisa.",
   "architectural_notes": [
-    "Backend uses lowercase string roles ('admin', 'client', 'asistenmu') while frontend displays Title Case labels",
-    "User approval flow requires principalId parameter and requestedRole as lowercase string",
-    "getCurrentUser() or getUserProfile() returns full User object with name, role, status fields",
-    "getClientTasks() returns array of tasks with status property for metrics filtering",
-    "Frontend filters task metrics by status: 'Client Review', 'Sedang Dikerjakan', 'Completed'",
-    "Theme: Boutique style with bg-[#FDFCFB], gold shadows, Midnight Slate text",
-    "User table displays: name, companyBisnis, kotaDomisili, phoneNumber, requestedRole, principalId"
+    "Backend menggunakan Motoko dengan sistem role-based access control (Admin, Superadmin, User)",
+    "Terdapat fungsi helper untuk assign user role yang dipanggil dalam proses approval",
+    "Fungsi approval (`approveUser`) sudah mengizinkan Superadmin, tetapi fungsi helper yang dipanggil di dalamnya masih terbatas untuk Admin"
   ],
   "known_issues": [
-    "Approve button throws 'Invalid requested role' error due to requestedRole showing as 'unknown' in pending users table",
-    "requestedRole field not properly saved during user registration, causing null/unknown values",
-    "Frontend mapping of requestedRole from backend needs correction to avoid 'unknown' display"
+    "Error \"Unauthorized: Only admins can assign user roles\" muncul saat Superadmin klik Approve karena fungsi helper (seperti `assignUserRole`) masih terkunci hanya untuk Admin"
   ],
   "isFixRequest": true,
-  "existing_features": [
+  "existing_features": [],
+  "new_feature_requests": [
     {
-      "id": "feature-in-usermanagementpage-tsx-and-usermanagementtable-tsx-ensure-the-requestedrole-field-is-properly-fetched-from-the-backend-and-mapped-to-the-ui-transform-lowercase-string-values-from-backend-client-asistenmu-admin-to-title-case-labels-client-asistenmu-admin-for-display-in-the-role-column-of-the-pending-users-table",
-      "title": "In UserManagementPage.tsx and UserManagementTable.tsx, ensure the requestedRole field is properly fetched from the backend and mapped to the UI. Transform lowercase string values from backend ('client', 'asistenmu', 'admin') to Title Case labels ('Client', 'Asistenmu', 'Admin') for display in the Role column of the pending users table.",
+      "id": "AR-1",
+      "summary": "Locate the helper function in backend/main.mo that validates authorization for assigning user roles (likely `assignUserRole`, `assignCallerUserRole`, or similar) which currently throws the error message 'Only admins can assign user roles'",
       "reqIds": [
         "REQ-1"
       ],
-      "version": 1
+      "status": "pending"
     },
     {
-      "id": "feature-update-the-approve-button-in-usermanagementtable-tsx-to-send-the-principalid-parameter-to-the-backend-approveuser-function-with-requestedrole-as-a-lowercase-string-admin-client-asistenmu-add-a-loading-spinner-to-the-approve-button-to-indicate-the-blockchain-transaction-is-in-progress",
-      "title": "Update the Approve button in UserManagementTable.tsx to send the principalId parameter to the backend approveUser function with requestedRole as a lowercase string ('admin', 'client', 'asistenmu'). Add a loading spinner to the Approve button to indicate the blockchain transaction is in progress.",
+      "id": "AR-2",
+      "summary": "Update the authorization logic in the role assignment helper function to allow callers with either 'superadmin' OR 'admin' role (case-insensitive comparison with lowercase string values)",
       "reqIds": [
         "REQ-2"
       ],
-      "version": 1
+      "status": "pending"
     },
     {
-      "id": "feature-in-usermanagementtable-tsx-update-the-user-detail-columns-to-display-name-user-name-business-user-companybisnis-city-user-kotadomisili-whatsapp-user-phonenumber-requested-role-user-requestedrole-transformed-to-title-case-and-principal-id-user-principalid-totext-with-monospace-font-and-small-size",
-      "title": "In UserManagementTable.tsx, update the user detail columns to display: Name (user.name), Business (user.companyBisnis), City (user.kotaDomisili), WhatsApp (user.phoneNumber), Requested Role (user.requestedRole transformed to Title Case), and Principal ID (user.principalId.toText() with monospace font and small size).",
+      "id": "AR-3",
+      "summary": "Audit all other helper functions related to the user approval/rejection workflow in backend/main.mo to ensure none are exclusively restricted to 'admin' role when they should also allow 'superadmin'",
       "reqIds": [
         "REQ-3"
       ],
-      "version": 1
-    },
-    {
-      "id": "feature-in-clientdashboard-tsx-integrate-with-the-getcurrentuser-backend-function-to-fetch-and-display-the-user-s-name-in-the-welcome-greeting-if-the-name-is-empty-or-unavailable-use-client-as-fallback-text",
-      "title": "In ClientDashboard.tsx, integrate with the getCurrentUser() backend function to fetch and display the user's name in the welcome greeting. If the name is empty or unavailable, use 'Client' as fallback text.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-in-clientdashboard-tsx-implement-task-metrics-by-fetching-data-from-getclienttasks-backend-function-and-counting-tasks-by-status-on-the-frontend-display-three-metric-cards-task-meminta-review-kamu-count-tasks-with-status-client-review-task-sedang-dikerjakan-count-tasks-with-status-sedang-dikerjakan-and-task-selesai-count-tasks-with-status-completed-show-0-as-fallback-if-data-is-empty",
-      "title": "In ClientDashboard.tsx, implement task metrics by fetching data from getClientTasks() backend function and counting tasks by status on the frontend. Display three metric cards: 'Task Meminta Review Kamu' (count tasks with status 'Client Review'), 'Task Sedang Dikerjakan' (count tasks with status 'Sedang Dikerjakan'), and 'Task Selesai' (count tasks with status 'Completed'). Show 0 as fallback if data is empty.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-all-updated-components-usermanagementpage-usermanagementtable-clientdashboard-maintain-the-boutique-theme-with-bg-fdfcfb-background-thin-gold-shadows-and-midnight-slate-text-colors-as-defined-in-the-existing-design-system",
-      "title": "Ensure all updated components (UserManagementPage, UserManagementTable, ClientDashboard) maintain the Boutique theme with bg-[#FDFCFB] background, thin gold shadows, and Midnight Slate text colors as defined in the existing design system.",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "version": 1
+      "status": "pending"
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "Premium Boutique",
+  "projectName": "Work Management Hub",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

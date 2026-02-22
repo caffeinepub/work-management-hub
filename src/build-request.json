@@ -1,142 +1,74 @@
 {
   "kind": "build_request",
-  "title": "Fix user approval flow and update user management UI",
-  "projectName": "Premium Boutique",
+  "title": "Fix Superadmin authorization in user role assignment helper functions",
+  "projectName": "Work Management Hub",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In UserManagementPage.tsx and UserManagementTable.tsx, ensure the requestedRole field is properly fetched from the backend and mapped to the UI. Transform lowercase string values from backend ('client', 'asistenmu', 'admin') to Title Case labels ('Client', 'Asistenmu', 'Admin') for display in the Role column of the pending users table.",
-      "target": "frontend",
+      "text": "Locate the helper function in backend/main.mo that validates authorization for assigning user roles (likely `assignUserRole`, `assignCallerUserRole`, or similar) which currently throws the error message 'Only admins can assign user roles'",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1",
-          "msg-5"
+          "msg-8"
         ],
         "quotes": [
-          "requestedRole di backend adalah string huruf kecil (misal: 'admin', 'client', 'asistenmu')",
-          "transform data string lowercase dari backend ('client', 'asistenmu', dll) menjadi label Title Case yang user-friendly di UI (menjadi 'Client', 'Asistenmu', 'Admin')"
+          "Cari fungsi yang bertugas menetapkan role user (misalnya `assignUserRole` atau yang memunculkan pesan error \"Only admins can assign user roles\")"
         ]
       },
       "acceptanceCriteria": [
-        "The Role column in the User Pending table displays 'Client', 'Asistenmu', or 'Admin' instead of 'unknown'",
-        "Lowercase role strings from backend are transformed to Title Case in the UI",
-        "No 'unknown' values appear in the Role column"
+        "The specific helper function responsible for role assignment authorization is identified",
+        "The function currently restricts access to only 'admin' role"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update the Approve button in UserManagementTable.tsx to send the principalId parameter to the backend approveUser function with requestedRole as a lowercase string ('admin', 'client', 'asistenmu'). Add a loading spinner to the Approve button to indicate the blockchain transaction is in progress.",
-      "target": "frontend",
+      "text": "Update the authorization logic in the role assignment helper function to allow callers with either 'superadmin' OR 'admin' role (case-insensitive comparison with lowercase string values)",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1",
-          "msg-5"
+          "msg-8"
         ],
         "quotes": [
-          "Fungsi backend `approveUser` menerima parameter `principalId`",
-          "requestedRole di backend adalah string huruf kecil",
-          "Tambahkan loading spinner pada tombol Approve agar admin tahu proses transaksi di blockchain sedang berjalan"
+          "Ubah logika pengecekan otorisasinya agar fungsi tersebut MENGIZINKAN pemanggil dengan role \"Superadmin\" ATAU \"Admin\""
         ]
       },
       "acceptanceCriteria": [
-        "Approve button sends principalId and lowercase requestedRole to backend",
-        "A loading spinner appears on the Approve button during approval",
-        "The 'Invalid requested role' error no longer occurs when approving users"
+        "The helper function's authorization check accepts both 'admin' and 'superadmin' roles",
+        "Role comparison uses lowercase string matching to handle backend storage format",
+        "The error 'Unauthorized: Only admins can assign user roles' is no longer thrown for Superadmin callers"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "In UserManagementTable.tsx, update the user detail columns to display: Name (user.name), Business (user.companyBisnis), City (user.kotaDomisili), WhatsApp (user.phoneNumber), Requested Role (user.requestedRole transformed to Title Case), and Principal ID (user.principalId.toText() with monospace font and small size).",
-      "target": "frontend",
+      "text": "Audit all other helper functions related to the user approval/rejection workflow in backend/main.mo to ensure none are exclusively restricted to 'admin' role when they should also allow 'superadmin'",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-8"
         ],
         "quotes": [
-          "Sesuai dengan type `User` di backend, sekarang tampilkan kolom berikut pada tabel Internal Dashboard: Nama: `user.name`, Bisnis: `user.companyBisnis`, Kota: `user.kotaDomisili`, WhatsApp: `user.phoneNumber`, Role Diajukan: `user.requestedRole`, Principal ID: `user.principalId.toText()` (Gunakan font mono & kecil)"
+          "Pastikan tidak ada lagi fungsi helper terkait proses Approve/Reject yang masih eksklusif untuk Admin saja"
         ]
       },
       "acceptanceCriteria": [
-        "User management table displays all specified columns: Name, Business, City, WhatsApp, Requested Role, Principal ID",
-        "Principal ID is displayed in monospace font with small size",
-        "Requested Role shows Title Case labels"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "In ClientDashboard.tsx, integrate with the getCurrentUser() backend function to fetch and display the user's name in the welcome greeting. If the name is empty or unavailable, use 'Client' as fallback text.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5",
-          "msg-6"
-        ],
-        "quotes": [
-          "Nama Welcome: Ambil dari `user.name` lewat fungsi `getCurrentUser()`",
-          "Asumsikan fungsi ini (atau `getUserProfile` menggunakan principal caller) sudah mengembalikan struktur object `User` yang lengkap (name, role, status, dll). Silakan langsung mapping data name-nya ke greeting di Dashboard Client. Jika data kosong, berikan fallback text (misal: 'Client')"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Dashboard displays personalized greeting using user.name from getCurrentUser()",
-        "If name is empty or unavailable, displays 'Client' as fallback",
-        "No errors occur when fetching user data"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "In ClientDashboard.tsx, implement task metrics by fetching data from getClientTasks() backend function and counting tasks by status on the frontend. Display three metric cards: 'Task Meminta Review Kamu' (count tasks with status 'Client Review'), 'Task Sedang Dikerjakan' (count tasks with status 'Sedang Dikerjakan'), and 'Task Selesai' (count tasks with status 'Completed'). Show 0 as fallback if data is empty.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5",
-          "msg-6"
-        ],
-        "quotes": [
-          "Metrik Task: Hitung jumlah task berdasarkan status yang sudah di-masking oleh backend di fungsi `getClientTasks`. 'Task Meminta Review Kamu' = Status 'Client Review', 'Task Sedang Dikerjakan' = Status 'Sedang Dikerjakan', 'Task Selesai' = Status 'Completed'",
-          "Lakukan filtering metrik di level frontend dengan mencocokkan string status tersebut ('Client Review', 'Sedang Dikerjakan', 'Completed'). Pastikan menambahkan fallback/empty state jika datanya kosong (0)"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Dashboard displays three task metric cards with counts based on status filtering",
-        "'Task Meminta Review Kamu' shows count of tasks with status 'Client Review'",
-        "'Task Sedang Dikerjakan' shows count of tasks with status 'Sedang Dikerjakan'",
-        "'Task Selesai' shows count of tasks with status 'Completed'",
-        "Metrics display 0 when no tasks are available for each status"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Ensure all updated components (UserManagementPage, UserManagementTable, ClientDashboard) maintain the Boutique theme with bg-[#FDFCFB] background, thin gold shadows, and Midnight Slate text colors as defined in the existing design system.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "THEME CONSISTENCY: Tetap gunakan tema Boutique (bg-[#FDFCFB], shadow emas tipis, dan Midnight Slate text)"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All updated components use bg-[#FDFCFB] for backgrounds",
-        "Components maintain thin gold shadow styling",
-        "Text uses Midnight Slate color from the design system",
-        "Visual consistency matches existing Boutique theme across all pages"
+        "All helper functions called during user approval flow allow both 'admin' and 'superadmin' roles",
+        "All helper functions called during user rejection flow allow both 'admin' and 'superadmin' roles",
+        "No authorization errors occur when Superadmin performs approval or rejection actions"
       ]
     }
   ],
   "constraints": [
-    "Do not modify backend/main.mo as it has been updated by the user",
-    "Do not edit immutable frontend paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui",
-    "Use lowercase string values for requestedRole when calling backend functions ('client', 'asistenmu', 'admin')",
-    "Transform role values to Title Case only for UI display, not for backend communication"
+    "Only modify backend Motoko code in backend/main.mo",
+    "Do not change the frontend code",
+    "Maintain case-insensitive role comparison using lowercase string values as stored in backend",
+    "Preserve existing authorization logic for other roles and operations"
   ],
   "nonGoals": [
-    "Modifying the backend main.mo file or migration logic",
-    "Changing the authentication flow or Internet Identity integration",
-    "Altering the user registration process or forms",
-    "Adding new roles or permissions beyond existing ones",
-    "Implementing real-time updates or WebSocket features"
+    "Adding new roles or permissions",
+    "Changing the user interface",
+    "Modifying the approval workflow logic beyond authorization fixes",
+    "Restructuring the backend architecture"
   ],
   "imageRequirements": {
     "required": [],
