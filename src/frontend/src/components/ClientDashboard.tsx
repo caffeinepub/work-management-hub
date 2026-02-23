@@ -1,5 +1,5 @@
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCurrentUser, useGetClientTasks, useCreateTask, useApproveEstimasiClient, useGetMyLayananAktif, useGetCallerUserProfile, useUpdateProfile, useGetClientMainService } from '../hooks/useQueries';
+import { useCurrentUser, useGetClientTasks, useCreateTask, useApproveEstimasiClient, useGetMyLayananAktif, useGetCallerUserProfile, useUpdateProfile, useGetClientMainService } from '../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -18,10 +18,10 @@ import { toast } from 'sonner';
 
 export default function ClientDashboard() {
   const { clear, identity } = useInternetIdentity();
-  const { data: currentUser, isLoading: currentUserLoading } = useGetCurrentUser();
+  const { data: currentUser, isLoading: currentUserLoading } = useCurrentUser();
   const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
-  const { data: tasks = [], isLoading: tasksLoading } = useGetClientTasks(identity?.getPrincipal() || null);
-  const { data: myLayananAktif = [], isLoading: layananLoading } = useGetMyLayananAktif(identity?.getPrincipal() || null);
+  const { data: tasks = [], isLoading: tasksLoading } = useGetClientTasks(identity?.getPrincipal());
+  const { data: myLayananAktif = [], isLoading: layananLoading } = useGetMyLayananAktif();
   const { data: mainService, isLoading: mainServiceLoading } = useGetClientMainService();
   const queryClient = useQueryClient();
   const createTaskMutation = useCreateTask();
@@ -109,7 +109,7 @@ export default function ClientDashboard() {
 
   const handleApproveEstimasi = async (taskId: string) => {
     try {
-      const result = await approveEstimasiMutation.mutateAsync({ taskId });
+      const result = await approveEstimasiMutation.mutateAsync(taskId);
 
       if (result.__kind__ === 'ok') {
         toast.success('Estimasi berhasil disetujui!');
@@ -122,7 +122,7 @@ export default function ClientDashboard() {
   };
 
   const handleUpdateProfile = async () => {
-    if (!editProfileForm.name || !editProfileForm.email || !editProfileForm.phoneNumber) {
+    if (!editProfileForm.name || !editProfileForm.phoneNumber || !editProfileForm.email) {
       toast.error('Semua field harus diisi');
       return;
     }
@@ -141,106 +141,83 @@ export default function ClientDashboard() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusLower = status.toLowerCase();
-    
-    if (statusLower.includes('requested')) {
-      return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200"><Clock className="w-3 h-3 mr-1" />Requested</Badge>;
-    } else if (statusLower.includes('awaiting') || statusLower.includes('menunggu')) {
-      return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200"><AlertCircle className="w-3 h-3 mr-1" />Menunggu Persetujuan</Badge>;
-    } else if (statusLower.includes('didelegasikan')) {
-      return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200"><Clock className="w-3 h-3 mr-1" />Sedang Didelegasikan</Badge>;
-    } else if (statusLower.includes('dikerjakan') || statusLower.includes('progress')) {
-      return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200"><Loader2 className="w-3 h-3 mr-1 animate-spin" />Sedang Dikerjakan</Badge>;
-    } else if (statusLower.includes('quality') || statusLower.includes('qa')) {
-      return <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200"><FileText className="w-3 h-3 mr-1" />Quality Assurance</Badge>;
-    } else if (statusLower.includes('review')) {
-      return <Badge variant="outline" className="bg-cyan-50 text-cyan-700 border-cyan-200"><FileText className="w-3 h-3 mr-1" />Client Review</Badge>;
-    } else if (statusLower.includes('revision')) {
-      return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200"><AlertCircle className="w-3 h-3 mr-1" />Revision</Badge>;
-    } else if (statusLower.includes('completed') || statusLower.includes('selesai')) {
-      return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />Completed</Badge>;
-    }
-    
-    return <Badge variant="outline">{status}</Badge>;
-  };
-
-  // Calculate task metrics based on status filtering
+  // Calculate task metrics from tasks array
   const taskMetrics = useMemo(() => {
-    const clientReviewCount = tasks.filter(t => t.status === 'Client Review').length;
-    const sedangDikerjakanCount = tasks.filter(t => t.status === 'Sedang Dikerjakan').length;
-    const completedCount = tasks.filter(t => t.status === 'Completed').length;
+    const clientReview = tasks.filter(t => t.status === 'Client Review').length;
+    const sedangDikerjakan = tasks.filter(t => 
+      t.status === 'Sedang Dikerjakan' || 
+      t.status === 'Sedang Didelegasikan' || 
+      t.status === 'Quality Assurance' ||
+      t.status === 'Revision'
+    ).length;
+    const completed = tasks.filter(t => t.status === 'Completed').length;
 
-    return {
-      clientReview: clientReviewCount,
-      sedangDikerjakan: sedangDikerjakanCount,
-      completed: completedCount,
-    };
+    return { clientReview, sedangDikerjakan, completed };
   }, [tasks]);
 
-  if (currentUserLoading || profileLoading) {
+  if (currentUserLoading || profileLoading || tasksLoading || layananLoading || mainServiceLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#1A2E35]" />
+      <div className="min-h-screen flex items-center justify-center bg-[#FAFBFD]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
       </div>
     );
   }
 
-  const initials = currentUser?.name
-    ?.split(' ')
+  const userName = currentUser?.name || 'Client';
+  const initials = userName
+    .split(' ')
     .map((n) => n[0])
     .join('')
     .toUpperCase()
-    .slice(0, 2) || 'CL';
-
-  // Use currentUser.name with fallback to "Client"
-  const userName = currentUser?.name || 'Client';
+    .slice(0, 2);
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB]">
+    <div className="min-h-screen bg-[#FAFBFD]">
       {/* Header */}
-      <header className="w-full py-4 px-4 sm:px-6 lg:px-8 border-b border-[#E5D5C0] bg-white">
+      <header className="w-full py-4 px-4 sm:px-6 lg:px-8 border-b border-gray-200 bg-white">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center">
-            <img src="/assets/asistenku-icon.png" alt="Asistenku" className="h-10 w-auto" />
-          </div>
+          <img src="/assets/asistenku-horizontal.png" alt="Asistenku" className="h-10 w-auto" />
           <div className="relative" ref={dropdownRef}>
-            <DropdownMenu open={isProfileDropdownOpen} onOpenChange={setIsProfileDropdownOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-12 w-12 rounded-full p-0">
-                  <Avatar className="h-12 w-12 border-2 border-[#D4AF37]">
-                    <AvatarFallback className="bg-gradient-to-br from-[#D4AF37] to-[#C5A028] text-white font-bold tracking-wide">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-white border-[#E5D5C0]">
-                <DropdownMenuLabel className="text-[#2D2D2D]">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium tracking-wide">{userName}</p>
-                    <p className="text-xs text-[#8B8B8B] font-normal">Client</p>
+            <button
+              onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+              className="relative h-12 w-12 rounded-full p-0 focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:ring-offset-2"
+            >
+              <Avatar className="h-12 w-12 border-4 border-yellow-500">
+                <AvatarFallback className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white font-bold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </button>
+
+            {isProfileDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                <div className="py-1">
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-sm font-medium text-[#0F172A]">{userName}</p>
+                    <p className="text-xs text-[#475569] truncate">{currentUser?.email || 'No email'}</p>
                   </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-[#E5D5C0]" />
-                <DropdownMenuItem 
-                  onClick={() => {
-                    setIsEditProfileOpen(true);
-                    setIsProfileDropdownOpen(false);
-                  }}
-                  className="text-[#2D2D2D] cursor-pointer"
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  Edit Profil
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={handleLogout}
-                  className="text-[#D4AF37] cursor-pointer font-medium"
-                >
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <button
+                    onClick={() => {
+                      setIsEditProfileOpen(true);
+                      setIsProfileDropdownOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-[#0F172A] hover:bg-[#FDFCFB] flex items-center gap-2"
+                  >
+                    <User className="h-4 w-4" />
+                    Edit Profile
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -248,163 +225,133 @@ export default function ClientDashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="space-y-8">
-          {/* Greeting Section */}
+          {/* Greeting */}
           <div>
-            <h1 className="text-3xl font-bold tracking-wide text-[#1A2E35]">
-              Ruang Kerja Kamu, selamat datang {userName}!
-            </h1>
+            <h1 className="text-3xl font-bold text-[#0F172A]">Halo, {userName}! 👋</h1>
+            <p className="text-[#475569] mt-2">Selamat datang kembali di dashboard Anda</p>
+          </div>
+
+          {/* Task Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="shadow-gold border border-[#E5D5C0]">
+              <CardHeader className="pb-3">
+                <CardDescription className="text-[#475569]">Client Review</CardDescription>
+                <CardTitle className="text-4xl font-bold text-[#D4AF37]">{taskMetrics.clientReview}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-[#475569]">Task menunggu review Anda</p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-gold border border-[#E5D5C0]">
+              <CardHeader className="pb-3">
+                <CardDescription className="text-[#475569]">Sedang Dikerjakan</CardDescription>
+                <CardTitle className="text-4xl font-bold text-[#0F172A]">{taskMetrics.sedangDikerjakan}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-[#475569]">Task dalam proses</p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-gold border border-[#E5D5C0]">
+              <CardHeader className="pb-3">
+                <CardDescription className="text-[#475569]">Completed</CardDescription>
+                <CardTitle className="text-4xl font-bold text-green-600">{taskMetrics.completed}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-[#475569]">Task selesai</p>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Main Service Card */}
-          {mainServiceLoading ? (
-            <Card className="bg-white border-[0.5px] border-[#E5D5C0] shadow-[0_4px_20px_-5px_rgba(212,175,55,0.15)]">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-[#1A2E35]" />
-                </div>
-              </CardContent>
-            </Card>
-          ) : mainService ? (
-            <Card className="bg-white border-[0.5px] border-[#E5D5C0] shadow-[0_4px_20px_-5px_rgba(212,175,55,0.15)]">
+          {mainService && (
+            <Card className="shadow-gold border-2 border-[#D4AF37] bg-gradient-to-br from-white to-[#FDFCFB]">
               <CardHeader>
-                <CardTitle className="text-xl font-bold tracking-wide text-[#1A2E35]">Layanan Aktif</CardTitle>
-                <CardDescription className="text-[#2D2D2D]">Informasi layanan yang sedang berjalan</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl text-[#0F172A]">{mainService.nama}</CardTitle>
+                    <CardDescription className="text-[#475569] mt-1">{mainService.scopeKerja}</CardDescription>
+                  </div>
+                  <Badge className="bg-[#D4AF37] text-white hover:bg-[#C4A037] px-4 py-2 text-sm">
+                    Active
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
-                    <p className="text-sm text-[#8B8B8B] mb-1 tracking-wide">Tipe Layanan</p>
-                    <p className="text-lg font-semibold text-[#1A2E35]">{mainService.nama}</p>
+                    <p className="text-sm text-[#475569]">Saldo Jam</p>
+                    <p className="text-2xl font-bold text-[#0F172A]">{Number(mainService.saldoJamEfektif)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-[#8B8B8B] mb-1 tracking-wide">Sisa Unit Layanan</p>
-                    <p className="text-lg font-semibold text-[#1A2E35]">{Number(mainService.saldoJamEfektif / BigInt(2))} Unit</p>
+                    <p className="text-sm text-[#475569]">On Hold</p>
+                    <p className="text-2xl font-bold text-[#0F172A]">{Number(mainService.jamOnHold)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-[#8B8B8B] mb-1 tracking-wide">Unit On-Hold</p>
-                    <p className="text-lg font-semibold text-[#1A2E35]">{Number(mainService.jamOnHold / BigInt(2))} Unit</p>
+                    <p className="text-sm text-[#475569]">Harga</p>
+                    <p className="text-2xl font-bold text-[#0F172A]">Rp {Number(mainService.harga).toLocaleString('id-ID')}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-[#8B8B8B] mb-1 tracking-wide">Sharing Layanan</p>
-                    <p className="text-lg font-semibold text-[#1A2E35]">
-                      {myLayananAktif.length > 1 ? 'Aktif' : 'Tidak'}
+                    <p className="text-sm text-[#475569]">Deadline</p>
+                    <p className="text-lg font-semibold text-[#0F172A]">
+                      {new Date(Number(mainService.deadline) / 1000000).toLocaleDateString('id-ID')}
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ) : (
-            <Card className="bg-white border-[0.5px] border-[#E5D5C0] shadow-[0_4px_20px_-5px_rgba(212,175,55,0.15)]">
-              <CardContent className="p-6">
-                <p className="text-center text-[#8B8B8B]">Belum ada layanan aktif</p>
-              </CardContent>
-            </Card>
           )}
 
-          {/* Task Metrics Cards (3 Cards) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-white border-[0.5px] border-cyan-200 shadow-[0_4px_20px_-5px_rgba(212,175,55,0.15)]">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-[#8B8B8B] mb-1 tracking-wide">Task Meminta Review Kamu</p>
-                    <p className="text-3xl font-bold text-cyan-700">{taskMetrics.clientReview}</p>
-                  </div>
-                  <div className="h-12 w-12 rounded-full bg-cyan-50 flex items-center justify-center">
-                    <FileText className="h-6 w-6 text-cyan-700" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border-[0.5px] border-emerald-200 shadow-[0_4px_20px_-5px_rgba(212,175,55,0.15)]">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-[#8B8B8B] mb-1 tracking-wide">Task Sedang Dikerjakan</p>
-                    <p className="text-3xl font-bold text-emerald-700">{taskMetrics.sedangDikerjakan}</p>
-                  </div>
-                  <div className="h-12 w-12 rounded-full bg-emerald-50 flex items-center justify-center">
-                    <Loader2 className="h-6 w-6 text-emerald-700 animate-spin" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border-[0.5px] border-green-200 shadow-[0_4px_20px_-5px_rgba(212,175,55,0.15)]">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-[#8B8B8B] mb-1 tracking-wide">Task Selesai</p>
-                    <p className="text-3xl font-bold text-green-700">{taskMetrics.completed}</p>
-                  </div>
-                  <div className="h-12 w-12 rounded-full bg-green-50 flex items-center justify-center">
-                    <CheckCircle className="h-6 w-6 text-green-700" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Action & Support Section */}
-          <div className="flex flex-wrap gap-4">
+          {/* Action Buttons */}
+          <div className="flex gap-4">
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-[#1A2E35] hover:bg-[#2A3E45] text-white px-6 py-3 text-lg tracking-wide">
-                  <Plus className="w-5 h-5 mr-2" />
+                <Button className="bg-[#D4AF37] hover:bg-[#C4A037] text-white shadow-gold">
+                  <Plus className="mr-2 h-5 w-5" />
                   Buat Task Baru
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[525px] bg-white border-[#E5D5C0]">
+              <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                  <DialogTitle className="text-[#1A2E35] tracking-wide">Buat Task Baru</DialogTitle>
-                  <DialogDescription className="text-[#2D2D2D]">
-                    Pilih layanan aktif Anda dan masukkan detail task yang ingin dibuat.
+                  <DialogTitle className="text-[#0F172A]">Buat Task Baru</DialogTitle>
+                  <DialogDescription className="text-[#475569]">
+                    Isi detail task yang ingin Anda buat
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="layananId" className="text-[#2D2D2D] tracking-wide">Pilih Layanan</Label>
-                    {layananLoading ? (
-                      <div className="flex items-center justify-center py-4">
-                        <Loader2 className="h-5 w-5 animate-spin text-[#1A2E35]" />
-                      </div>
-                    ) : myLayananAktif.length === 0 ? (
-                      <div className="text-sm text-[#2D2D2D] bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                        Tidak ada layanan aktif. Silakan hubungi admin untuk mengaktifkan layanan.
-                      </div>
-                    ) : (
-                      <Select value={newTask.layananId} onValueChange={(value) => setNewTask({ ...newTask, layananId: value })}>
-                        <SelectTrigger className="border-[#E5D5C0]">
-                          <SelectValue placeholder="Pilih layanan" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {myLayananAktif.map((layanan) => (
-                            <SelectItem key={layanan.id} value={layanan.id}>
-                              {layanan.nama} - {Number(layanan.saldoJamEfektif / BigInt(2))} Unit tersisa
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="layanan" className="text-[#0F172A]">Pilih Layanan</Label>
+                    <Select value={newTask.layananId} onValueChange={(value) => setNewTask({ ...newTask, layananId: value })}>
+                      <SelectTrigger id="layanan">
+                        <SelectValue placeholder="Pilih layanan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {myLayananAktif.map((layanan) => (
+                          <SelectItem key={layanan.id} value={layanan.id}>
+                            {layanan.nama} (Saldo: {Number(layanan.saldo)} jam)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="judul" className="text-[#2D2D2D] tracking-wide">Judul Task</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="judul" className="text-[#0F172A]">Judul Task</Label>
                     <Input
                       id="judul"
-                      placeholder="Masukkan judul task"
                       value={newTask.judul}
                       onChange={(e) => setNewTask({ ...newTask, judul: e.target.value })}
+                      placeholder="Masukkan judul task"
                       className="border-[#E5D5C0]"
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="detailPermintaan" className="text-[#2D2D2D] tracking-wide">Detail Permintaan</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="detail" className="text-[#0F172A]">Detail Permintaan</Label>
                     <Textarea
-                      id="detailPermintaan"
-                      placeholder="Jelaskan detail task yang ingin dikerjakan"
+                      id="detail"
                       value={newTask.detailPermintaan}
                       onChange={(e) => setNewTask({ ...newTask, detailPermintaan: e.target.value })}
+                      placeholder="Jelaskan detail task Anda"
                       rows={4}
                       className="border-[#E5D5C0]"
                     />
@@ -412,10 +359,9 @@ export default function ClientDashboard() {
                 </div>
                 <DialogFooter>
                   <Button
-                    type="button"
                     onClick={handleCreateTask}
-                    disabled={createTaskMutation.isPending || myLayananAktif.length === 0}
-                    className="bg-[#1A2E35] hover:bg-[#2A3E45] text-white"
+                    disabled={createTaskMutation.isPending}
+                    className="bg-[#D4AF37] hover:bg-[#C4A037] text-white"
                   >
                     {createTaskMutation.isPending ? (
                       <>
@@ -432,80 +378,80 @@ export default function ClientDashboard() {
 
             <Button
               variant="outline"
-              className="border-[#E5D5C0] text-[#1A2E35] hover:bg-[#FDFCFB] px-6 py-3 text-lg tracking-wide"
-            >
-              <MessageSquare className="w-5 h-5 mr-2" />
-              Concierge (Coming Soon)
-            </Button>
-
-            <Button
-              variant="outline"
-              className="border-green-500 text-green-600 hover:bg-green-50 px-6 py-3 text-lg tracking-wide"
+              className="border-[#E5D5C0] text-[#0F172A] hover:bg-[#FDFCFB]"
               onClick={() => window.open('https://wa.me/6281234567890', '_blank')}
             >
-              <SiWhatsapp className="w-5 h-5 mr-2" />
-              Hubungi via WhatsApp
+              <SiWhatsapp className="mr-2 h-5 w-5 text-green-600" />
+              Hubungi Asistenmu
             </Button>
           </div>
 
           {/* Task List */}
-          <Card className="bg-white border-[0.5px] border-[#E5D5C0] shadow-[0_4px_20px_-5px_rgba(212,175,55,0.15)]">
+          <Card className="shadow-gold border border-[#E5D5C0]">
             <CardHeader>
-              <CardTitle className="text-xl font-bold tracking-wide text-[#1A2E35]">Daftar Task</CardTitle>
-              <CardDescription className="text-[#2D2D2D]">Semua task yang sedang berjalan dan selesai</CardDescription>
+              <CardTitle className="text-[#0F172A]">Daftar Task</CardTitle>
+              <CardDescription className="text-[#475569]">Semua task Anda</CardDescription>
             </CardHeader>
             <CardContent>
-              {tasksLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-[#1A2E35]" />
-                </div>
-              ) : tasks.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-[#8B8B8B]">Belum ada task. Buat task baru untuk memulai!</p>
+              {tasks.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="mx-auto h-12 w-12 text-[#E5D5C0]" />
+                  <p className="mt-4 text-[#475569]">Belum ada task. Buat task pertama Anda!</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {tasks.map((task) => (
-                    <div
-                      key={task.id}
-                      className="border border-[#E5D5C0] rounded-lg p-4 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-[#1A2E35] text-lg">{task.judul}</h3>
-                          <p className="text-sm text-[#8B8B8B] mt-1">{task.detailPermintaan}</p>
-                        </div>
-                        <div className="ml-4">
-                          {getStatusBadge(task.status)}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#E5D5C0]">
-                        <div className="flex items-center gap-4 text-sm text-[#8B8B8B]">
-                          <span>ID: {task.id}</span>
-                          <span>Estimasi: {Number(task.estimasiJam)} jam</span>
-                        </div>
-                        {task.status.toLowerCase().includes('awaiting') && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleApproveEstimasi(task.id)}
-                            disabled={approveEstimasiMutation.isPending}
-                            className="bg-[#1A2E35] hover:bg-[#2A3E45] text-white"
+                    <Card key={task.id} className="border border-[#E5D5C0]">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg text-[#0F172A]">{task.judul}</CardTitle>
+                            <CardDescription className="text-[#475569] mt-1">{task.detailPermintaan}</CardDescription>
+                          </div>
+                          <Badge
+                            className={
+                              task.status === 'Completed'
+                                ? 'bg-green-100 text-green-700 hover:bg-green-100'
+                                : task.status === 'Client Review'
+                                ? 'bg-[#D4AF37] text-white hover:bg-[#C4A037]'
+                                : 'bg-blue-100 text-blue-700 hover:bg-blue-100'
+                            }
                           >
-                            {approveEstimasiMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                                Menyetujui...
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="mr-2 h-3 w-3" />
-                                Setujui Estimasi
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                            {task.status === 'Completed' && <CheckCircle className="mr-1 h-3 w-3" />}
+                            {task.status === 'Client Review' && <AlertCircle className="mr-1 h-3 w-3" />}
+                            {task.status !== 'Completed' && task.status !== 'Client Review' && <Clock className="mr-1 h-3 w-3" />}
+                            {task.status}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-[#475569]">
+                            <span className="font-medium">Estimasi:</span> {Number(task.estimasiJam)} jam
+                          </div>
+                          {task.status === 'Awaiting Client Approval' && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleApproveEstimasi(task.id)}
+                              disabled={approveEstimasiMutation.isPending}
+                              className="bg-[#D4AF37] hover:bg-[#C4A037] text-white"
+                            >
+                              {approveEstimasiMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Menyetujui...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="mr-2 h-4 w-4" />
+                                  Setujui Estimasi
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               )}
@@ -514,58 +460,53 @@ export default function ClientDashboard() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="w-full py-6 px-4 sm:px-6 lg:px-8 border-t border-[#E5D5C0] bg-white mt-12">
-        <div className="max-w-7xl mx-auto text-center text-sm text-[#8B8B8B]">
-          <p>© {new Date().getFullYear()} Asistenku. All rights reserved.</p>
-        </div>
-      </footer>
-
-      {/* Edit Profile Modal */}
+      {/* Edit Profile Dialog */}
       <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white border-[#E5D5C0]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle className="text-[#1A2E35] tracking-wide">Edit Profil</DialogTitle>
-            <DialogDescription className="text-[#2D2D2D]">
-              Perbarui informasi profil Anda di sini.
+            <DialogTitle className="text-[#0F172A]">Edit Profile</DialogTitle>
+            <DialogDescription className="text-[#475569]">
+              Perbarui informasi profil Anda
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="edit-name" className="text-[#2D2D2D] tracking-wide">Nama</Label>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name" className="text-[#0F172A]">Nama</Label>
               <Input
                 id="edit-name"
                 value={editProfileForm.name}
                 onChange={(e) => setEditProfileForm({ ...editProfileForm, name: e.target.value })}
+                placeholder="Nama lengkap"
                 className="border-[#E5D5C0]"
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-email" className="text-[#2D2D2D] tracking-wide">Email</Label>
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone" className="text-[#0F172A]">Nomor WhatsApp</Label>
+              <Input
+                id="edit-phone"
+                value={editProfileForm.phoneNumber}
+                onChange={(e) => setEditProfileForm({ ...editProfileForm, phoneNumber: e.target.value })}
+                placeholder="08123456789"
+                className="border-[#E5D5C0]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email" className="text-[#0F172A]">Email</Label>
               <Input
                 id="edit-email"
                 type="email"
                 value={editProfileForm.email}
                 onChange={(e) => setEditProfileForm({ ...editProfileForm, email: e.target.value })}
-                className="border-[#E5D5C0]"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-phone" className="text-[#2D2D2D] tracking-wide">Nomor WhatsApp</Label>
-              <Input
-                id="edit-phone"
-                value={editProfileForm.phoneNumber}
-                onChange={(e) => setEditProfileForm({ ...editProfileForm, phoneNumber: e.target.value })}
+                placeholder="email@example.com"
                 className="border-[#E5D5C0]"
               />
             </div>
           </div>
           <DialogFooter>
             <Button
-              type="button"
               onClick={handleUpdateProfile}
               disabled={updateProfileMutation.isPending}
-              className="bg-[#1A2E35] hover:bg-[#2A3E45] text-white"
+              className="bg-[#D4AF37] hover:bg-[#C4A037] text-white"
             >
               {updateProfileMutation.isPending ? (
                 <>
@@ -579,6 +520,25 @@ export default function ClientDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 mt-24 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-[#475569]">
+          <p>
+            © {new Date().getFullYear()} Asistenku. Built with ❤️ using{' '}
+            <a
+              href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(
+                window.location.hostname
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#D4AF37] hover:underline"
+            >
+              caffeine.ai
+            </a>
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

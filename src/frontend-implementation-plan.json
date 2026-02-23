@@ -1,6 +1,46 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix superadmin claim authorization - Frontend Implementation Plan",
-  "requirements": []
+  "title": "Fix User Management Frontend Filtering and Add getAllUsers Integration",
+  "requirements": [
+    {
+      "id": "REQ-6",
+      "summary": "Update UserManagementPage.tsx to fetch user data from backendActor.getAllUsers()",
+      "acceptanceCriteria": [
+        "combinedUsers variable in UserManagementPage.tsx is populated by calling backendActor.getAllUsers()",
+        "Data fetching includes proper error handling and loading states"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/UserManagementPage.tsx",
+          "operation": "modify",
+          "description": "Replace the current data fetching logic for combinedUsers with a call to backendActor.getAllUsers(). Update the useEffect or data fetching hook to call await backendActor.getAllUsers() and store the result in combinedUsers state. Add proper error handling with try-catch blocks and display error messages to users if the fetch fails. Ensure loading states are properly managed during the async operation."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a new React Query hook useGetAllUsers() that wraps the backendActor.getAllUsers() call. The hook should return user data with proper typing (Array<User>), handle loading and error states, and be enabled only when the actor is available. Follow the existing pattern used in other hooks in this file for consistency."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Fix Motoko variant filtering logic in UserManagementPage.tsx to use 'in' operator for status and role checks",
+      "acceptanceCriteria": [
+        "All status filters in UserManagementPage.tsx use 'in' operator instead of === for variant checking",
+        "Pending users are filtered using 'pending' in u.status",
+        "Internal Active users are filtered using 'active' in u.status combined with role checks for superadmin, admin, finance, concierge, and asistenmu",
+        "Partner Active users are filtered using 'active' in u.status combined with role checks for partner and strategicPartner",
+        "Client Active users are filtered using 'active' in u.status && 'client' in u.role",
+        "Active users statistics and table display correct counts and data after filtering"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/UserManagementPage.tsx",
+          "operation": "modify",
+          "description": "Replace all status and role filtering logic that uses === comparisons with 'in' operator checks to properly handle Motoko variants which become JavaScript objects like { active: null } or { pending: null }. Update the pending users filter to use 'pending' in u.status. Update the Internal Active users filter to use 'active' in u.status && ('superadmin' in u.role || 'admin' in u.role || 'finance' in u.role || 'concierge' in u.role || 'asistenmu' in u.role). Update the Partner Active users filter to use 'active' in u.status && ('partner' in u.role || 'strategicPartner' in u.role). Update the Client Active users filter to use 'active' in u.status && 'client' in u.role. Verify that all statistics calculations and table displays reflect the corrected filtering logic."
+        }
+      ]
+    }
+  ]
 }

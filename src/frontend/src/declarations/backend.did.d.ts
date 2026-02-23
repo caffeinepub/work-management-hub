@@ -172,6 +172,7 @@ export interface _SERVICE {
     [Principal, string, string, string],
     CreateTaskResult
   >,
+  'getAllUsers' : ActorMethod<[], Array<User>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getClientMainService' : ActorMethod<[], [] | [Layanan]>,

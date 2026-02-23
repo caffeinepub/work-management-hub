@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the superadmin claim authorization issue by adding the #superadmin role variant to the access-control module and updating authorization logic to recognize superadmin privileges.
+**Goal:** Fix user data retrieval and filtering logic in the user management system by adding a backend query for all users and correcting Motoko variant handling in the frontend.
 
 **Planned changes:**
-- Add #superadmin variant to the UserRole enum in backend/access-control.mo
-- Update the isAdmin function to return true for both #admin and #superadmin roles
-- Ensure the Superadmin principal is automatically assigned the #superadmin role in AccessControlState when claiming superadmin privileges, either through AccessControl.assignRole after role assignment or by implementing a bypass mechanism for the initial superadmin claim
+- Add getAllUsers() query function to backend with admin authorization check
+- Update UserManagementPage.tsx to fetch user data from backendActor.getAllUsers()
+- Fix status and role filtering logic to properly handle Motoko variants using 'in' operator instead of === comparisons
 
-**User-visible outcome:** The first superadmin can successfully claim their privileges without encountering the "Unauthorized: Only admins can assign user roles" error, and all subsequent role assignments by the superadmin work correctly.
+**User-visible outcome:** Admin users can view accurate user lists with correct filtering for Pending, Internal Active, Partner Active, and Client Active users in the user management page.

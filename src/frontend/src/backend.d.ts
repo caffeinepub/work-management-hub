@@ -216,6 +216,7 @@ export interface backendInterface {
     claimSuperadmin(): Promise<void>;
     completeTask(taskId: string): Promise<CompleteTaskResult>;
     createTask(clientId: Principal, layananId: string, judul: string, detailPermintaan: string): Promise<CreateTaskResult>;
+    getAllUsers(): Promise<Array<User>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getClientMainService(): Promise<Layanan | null>;

@@ -245,6 +245,22 @@ actor {
   let withdrawRequests = Map.empty<Text, WithdrawRequest>();
   let partnerWallets = Map.empty<Principal, PartnerWallet>();
 
+  public query ({ caller }) func getAllUsers() : async [User] {
+    if (not isAuthorizedAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only Admins can view all users");
+    };
+    users.values().toArray();
+  };
+
+  func isAuthorizedAdmin(caller : Principal) : Bool {
+    switch (users.get(caller)) {
+      case (null) { false };
+      case (?user) {
+        user.status == #active and (user.role == #superadmin or user.role == #admin)
+      };
+    };
+  };
+
   func generateClientId() : async Text {
     let randomActor = Random.crypto();
     let randomNumber = await* randomActor.natRange(111111, 999999);

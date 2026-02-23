@@ -1,35 +1,45 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-23T05:19:21.943Z",
+  "generatedAt": "2026-02-23T12:42:35.563Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 3,
-    "implemented": 0,
+    "implemented": 2,
     "items": [
       {
-        "id": "REQ-4",
-        "summary": "Update the UserRole enum in backend/access-control.mo to include the #superadmin variant alongside existing role variants (#admin, #user)",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
         "id": "REQ-5",
-        "summary": "Modify the isAdmin function in backend/access-control.mo to return true when the user role is either #admin or #superadmin, using the pattern: let role = getUserRole(state, caller); return role == #admin or role == #superadmin;",
+        "summary": "Add a new query function getAllUsers() to backend/main.mo that returns all users from the users map as an array. The function must include authorization check using isAuthorizedAdmin(caller) and trap with 'Unauthorized: Only Admins can view all users' if caller is not authorized. Use Iter.toArray(users.vals()) to convert the map values to an array.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-6",
-        "summary": "Ensure the Superadmin principal is automatically assigned the #superadmin role in AccessControlState when claiming superadmin privileges in main.mo (around line 365-367), either by calling AccessControl.assignRole with #superadmin after setting role = #superadmin and status = #active, or by implementing a bypass mechanism in access-control.mo that skips the isAdmin check when the caller already has #superadmin role in the main user system",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Update UserManagementPage.tsx to fetch combinedUsers data from backendActor.getAllUsers() instead of the current data source.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/UserManagementPage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/UserManagementPage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-7",
+        "summary": "Fix the status and role filtering logic in UserManagementPage.tsx to correctly handle Motoko variants which become JavaScript objects like { active: null } or { pending: null }. Replace all === comparisons with 'in' operator checks. For Pending users: filter using 'pending' in u.status. For Internal Active users: filter using 'active' in u.status && ('superadmin' in u.role || 'admin' in u.role || 'finance' in u.role || 'concierge' in u.role || 'asistenmu' in u.role). For Partner Active users: filter using 'active' in u.status && ('partner' in u.role || 'strategicPartner' in u.role). For Client Active users: filter using 'active' in u.status && 'client' in u.role.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/UserManagementPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/UserManagementPage.tsx"
+        ]
       }
     ]
   },
@@ -37,11 +47,15 @@
     "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
+    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
+    "frontend/src/components/ClientDashboard.tsx",
+    "frontend/src/components/UserManagementPage.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

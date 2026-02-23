@@ -1,73 +1,76 @@
 {
   "kind": "build_request",
-  "title": "Fix superadmin claim authorization by adding superadmin role to access-control",
-  "projectName": "Asistenku Internal System",
+  "title": "Add getAllUsers backend query and fix frontend Motoko variant filtering logic",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-4",
-      "text": "Update the UserRole enum in backend/access-control.mo to include the #superadmin variant alongside existing role variants (#admin, #user)",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-latest"
-        ],
-        "quotes": [
-          "Saya mengalami stuck dalam mengclaim superadmin karena unauthorized. Only admin can asssign role."
-        ]
-      },
-      "acceptanceCriteria": [
-        "The UserRole type in access-control.mo includes #superadmin as a valid variant",
-        "The enum definition matches the pattern: type UserRole = { #admin; #superadmin; #user; }"
-      ]
-    },
-    {
       "id": "REQ-5",
-      "text": "Modify the isAdmin function in backend/access-control.mo to return true when the user role is either #admin or #superadmin, using the pattern: let role = getUserRole(state, caller); return role == #admin or role == #superadmin;",
+      "text": "Add a new query function getAllUsers() to backend/main.mo that returns all users from the users map as an array. The function must include authorization check using isAuthorizedAdmin(caller) and trap with 'Unauthorized: Only Admins can view all users' if caller is not authorized. Use Iter.toArray(users.vals()) to convert the map values to an array.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-user-data-issue"
         ],
         "quotes": [
-          "Only admin can asssign role"
+          "Tolong tambahkan satu fungsi query baru ini agar frontend bisa mengambil seluruh data user: public query ({ caller }) func getAllUsers() : async [User]"
         ]
       },
       "acceptanceCriteria": [
-        "The isAdmin function returns true for principals with #admin role",
-        "The isAdmin function returns true for principals with #superadmin role",
-        "The isAdmin function returns false for principals with #user role or no role",
-        "The implementation uses boolean OR logic to check both role conditions"
+        "getAllUsers() query function exists in backend/main.mo",
+        "Function checks authorization using isAuthorizedAdmin(caller)",
+        "Function traps with 'Unauthorized: Only Admins can view all users' for unauthorized callers",
+        "Function returns all users from the users map as an array using Iter.toArray(users.vals())"
       ]
     },
     {
       "id": "REQ-6",
-      "text": "Ensure the Superadmin principal is automatically assigned the #superadmin role in AccessControlState when claiming superadmin privileges in main.mo (around line 365-367), either by calling AccessControl.assignRole with #superadmin after setting role = #superadmin and status = #active, or by implementing a bypass mechanism in access-control.mo that skips the isAdmin check when the caller already has #superadmin role in the main user system",
-      "target": "backend",
+      "text": "Update UserManagementPage.tsx to fetch combinedUsers data from backendActor.getAllUsers() instead of the current data source.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-user-data-issue"
+        ],
+        "quotes": [
+          "Pastikan variabel combinedUsers di-fetch dari await backendActor.getAllUsers()"
         ]
       },
       "acceptanceCriteria": [
-        "When a user successfully claims superadmin privileges via main.mo, they are automatically registered with #superadmin role in the access-control state",
-        "The first superadmin claim completes without triggering 'Unauthorized: Only admins can assign user roles' error",
-        "Subsequent role assignments by the superadmin work correctly",
-        "The solution maintains consistency between the main.mo user role system and the access-control.mo authorization system"
+        "combinedUsers variable in UserManagementPage.tsx is populated by calling backendActor.getAllUsers()",
+        "Data fetching includes proper error handling and loading states"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Fix the status and role filtering logic in UserManagementPage.tsx to correctly handle Motoko variants which become JavaScript objects like { active: null } or { pending: null }. Replace all === comparisons with 'in' operator checks. For Pending users: filter using 'pending' in u.status. For Internal Active users: filter using 'active' in u.status && ('superadmin' in u.role || 'admin' in u.role || 'finance' in u.role || 'concierge' in u.role || 'asistenmu' in u.role). For Partner Active users: filter using 'active' in u.status && ('partner' in u.role || 'strategicPartner' in u.role). For Client Active users: filter using 'active' in u.status && 'client' in u.role.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-data-issue"
+        ],
+        "quotes": [
+          "Variant Motoko di JS menjadi Object seperti { active: null }, BUKAN string. Jadi Anda tidak bisa memakai ===. Gunakan operator in atau Object.keys()"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All status filters in UserManagementPage.tsx use 'in' operator instead of === for variant checking",
+        "Pending users are filtered using 'pending' in u.status",
+        "Internal Active users are filtered using 'active' in u.status combined with role checks for superadmin, admin, finance, concierge, and asistenmu",
+        "Partner Active users are filtered using 'active' in u.status combined with role checks for partner and strategicPartner",
+        "Client Active users are filtered using 'active' in u.status && 'client' in u.role",
+        "Active users statistics and table display correct counts and data after filtering"
       ]
     }
   ],
   "constraints": [
-    "Maintain the single-actor architecture with all Motoko logic in backend/main.mo",
-    "Preserve existing access-control.mo API and function signatures where possible",
-    "Do not modify the existing user role structure in main.mo (#superadmin, #admin, #finance, #concierge, #strategicPartner, #asistenmu, #client, #partner)",
-    "Ensure backward compatibility with existing users who already have roles assigned"
+    "Use the existing isAuthorizedAdmin function for authorization checking in getAllUsers",
+    "Maintain consistency with existing Map library usage in backend for toArray conversion",
+    "Do not modify the User type definition or existing user management functions beyond adding getAllUsers"
   ],
   "nonGoals": [
-    "Adding new user roles beyond #superadmin to access-control.mo",
-    "Changing the frontend authentication or registration flows",
-    "Modifying the Internet Identity integration",
-    "Implementing additional access control features beyond fixing the superadmin claim issue"
+    "Changing the overall user management architecture",
+    "Modifying role or status type definitions",
+    "Adding new user roles or statuses",
+    "Implementing pagination for user lists"
   ],
   "imageRequirements": {
     "required": [],

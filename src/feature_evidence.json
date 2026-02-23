@@ -1,4 +1,46 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-update-usermanagementpage-tsx-to-fetch-combinedusers-data-from-backendactor-getallusers-instead-of-the-current-data-source",
+      "featureTitle": "Update UserManagementPage.tsx to fetch combinedUsers data from backendActor.getAllUsers() instead of the current data source.",
+      "files": [
+        "frontend/src/components/UserManagementPage.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "user-approval@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-fix-the-status-and-role-filtering-logic-in-usermanagementpage-tsx-to-correctly-handle-motoko-variants-which-become-javascript-objects-like-active-null-or-pending-null-replace-all-comparisons-with-in-operator-checks-for-pending-users-filter-using-pending-in-u-status-for-internal-active-users-filter-using-active-in-u-status-superadmin-in-u-role-admin-in-u-role-finance-in-u-role-concierge-in-u-role-asistenmu-in-u-role-for-partner-active-users-filter-using-active-in-u-status-partner-in-u-role-strategicpartner-in-u-role-for-client-active-users-filter-using-active-in-u-status-client-in-u-role",
+      "featureTitle": "Fix the status and role filtering logic in UserManagementPage.tsx to correctly handle Motoko variants which become JavaScript objects like { active: null } or { pending: null }. Replace all === comparisons with 'in' operator checks. For Pending users: filter using 'pending' in u.status. For Internal Active users: filter using 'active' in u.status && ('superadmin' in u.role || 'admin' in u.role || 'finance' in u.role || 'concierge' in u.role || 'asistenmu' in u.role). For Partner Active users: filter using 'active' in u.status && ('partner' in u.role || 'strategicPartner' in u.role). For Client Active users: filter using 'active' in u.status && 'client' in u.role.",
+      "files": [
+        "frontend/src/components/UserManagementPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "user-approval@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

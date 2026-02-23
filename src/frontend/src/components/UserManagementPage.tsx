@@ -1,5 +1,5 @@
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useCurrentUser } from '../hooks/useQueries';
+import { useCurrentUser, useGetAllUsers } from '../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -16,6 +16,47 @@ import UserManagementTable from './UserManagementTable';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 
+// Helper functions to check Motoko variant types
+function isStatusPending(status: Status): boolean {
+  return (status as any).pending !== undefined;
+}
+
+function isStatusActive(status: Status): boolean {
+  return (status as any).active !== undefined;
+}
+
+function isRoleSuperadmin(role: Role): boolean {
+  return (role as any).superadmin !== undefined;
+}
+
+function isRoleAdmin(role: Role): boolean {
+  return (role as any).admin !== undefined;
+}
+
+function isRoleFinance(role: Role): boolean {
+  return (role as any).finance !== undefined;
+}
+
+function isRoleConcierge(role: Role): boolean {
+  return (role as any).concierge !== undefined;
+}
+
+function isRoleAsistenmu(role: Role): boolean {
+  return (role as any).asistenmu !== undefined;
+}
+
+function isRolePartner(role: Role): boolean {
+  return (role as any).partner !== undefined;
+}
+
+function isRoleStrategicPartner(role: Role): boolean {
+  return (role as any).strategicPartner !== undefined;
+}
+
+function isRoleClient(role: Role): boolean {
+  return (role as any).client !== undefined;
+}
+
 export default function UserManagementPage() {
   const { clear } = useInternetIdentity();
   const { data: currentUser, isLoading } = useCurrentUser();
@@ -25,7 +66,16 @@ export default function UserManagementPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch pending users directly from getPendingRequests (same as Dashboard)
+  // Fetch all users using the new getAllUsers() backend function
+  const { 
+    data: allUsersData = [], 
+    isLoading: usersLoading, 
+    isFetching: usersFetching, 
+    refetch: refetchAll,
+    error: usersError 
+  } = useGetAllUsers();
+
+  // Fetch pending users for fallback
   const { 
     data: pendingUsersData = [], 
     isLoading: pendingLoading, 
@@ -49,46 +99,12 @@ export default function UserManagementPage() {
     retryDelay: 1000,
   });
 
-  // Fetch all users from listApprovals for active users
-  const { 
-    data: allUsers = [], 
-    isLoading: usersLoading, 
-    isFetching: usersFetching, 
-    refetch: refetchAll,
-    error: usersError 
-  } = useQuery<User[]>({
-    queryKey: ['allUsers'],
-    queryFn: async () => {
-      try {
-        if (!actor) throw new Error('Actor not available');
-        const approvals = await actor.listApprovals();
-        const userPromises = approvals.map(approval => actor.getUserProfile(approval.principal));
-        const users = await Promise.all(userPromises);
-        return users.filter((u): u is User => u !== null);
-      } catch (error: any) {
-        console.error('Error fetching users:', error);
-        toast.error(`Failed to fetch users: ${error.message || 'Unknown error'}`);
-        throw error;
-      }
-    },
-    enabled: !!actor && !actorFetching,
-    retry: 2,
-    retryDelay: 1000,
-  });
-
-  // Combine pending users with all users for complete dataset
+  // Use allUsersData as the primary source
   const combinedUsers = useMemo(() => {
-    const allUserMap = new Map(allUsers.map(u => [u.principalId.toString(), u]));
-    const pendingUserMap = new Map(pendingUsersData.map(u => [u.principalId.toString(), u]));
-    
-    // Merge: pending users override any duplicates from allUsers
-    pendingUsersData.forEach(u => allUserMap.set(u.principalId.toString(), u));
-    
-    return Array.from(allUserMap.values());
-  }, [allUsers, pendingUsersData]);
+    return allUsersData;
+  }, [allUsersData]);
 
   // Filter users by search query (case-insensitive, search by name or ID)
-  // MUST be called before any conditional returns
   const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) return combinedUsers;
     
@@ -99,34 +115,32 @@ export default function UserManagementPage() {
     );
   }, [combinedUsers, searchQuery]);
 
-  // Filter users into 4 categories - use direct data from pendingUsersData for pending
+  // Filter users into 4 categories using helper functions for Motoko variants
   const pendingUsers = useMemo(() => 
-    searchQuery.trim() 
-      ? filteredUsers.filter(u => u.status === Status.pending)
-      : pendingUsersData,
-    [filteredUsers, pendingUsersData, searchQuery]
+    filteredUsers.filter(u => isStatusPending(u.status)),
+    [filteredUsers]
   );
 
   const internalActiveUsers = useMemo(() => 
     filteredUsers.filter(u => 
-      u.status === Status.active && 
-      [Role.superadmin, Role.admin, Role.finance, Role.concierge, Role.asistenmu].includes(u.role)
+      isStatusActive(u.status) && 
+      (isRoleSuperadmin(u.role) || isRoleAdmin(u.role) || isRoleFinance(u.role) || isRoleConcierge(u.role) || isRoleAsistenmu(u.role))
     ),
     [filteredUsers]
   );
 
   const partnerActiveUsers = useMemo(() => 
     filteredUsers.filter(u => 
-      u.status === Status.active && 
-      [Role.partner, Role.strategicPartner].includes(u.role)
+      isStatusActive(u.status) && 
+      (isRolePartner(u.role) || isRoleStrategicPartner(u.role))
     ),
     [filteredUsers]
   );
 
   const clientActiveUsers = useMemo(() => 
     filteredUsers.filter(u => 
-      u.status === Status.active && 
-      u.role === Role.client
+      isStatusActive(u.status) && 
+      isRoleClient(u.role)
     ),
     [filteredUsers]
   );
@@ -168,7 +182,7 @@ export default function UserManagementPage() {
   }
 
   // Authorization check - Allow both Superadmin and Admin
-  if (!currentUser || (currentUser.role !== Role.superadmin && currentUser.role !== Role.admin)) {
+  if (!currentUser || !(isRoleSuperadmin(currentUser.role) || isRoleAdmin(currentUser.role))) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -212,7 +226,7 @@ export default function UserManagementPage() {
               <div className="px-2 py-2">
                 <p className="text-sm font-medium">{currentUser?.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {currentUser.role === Role.superadmin ? 'Superadmin' : 'Admin'}
+                  {isRoleSuperadmin(currentUser.role) ? 'Superadmin' : 'Admin'}
                 </p>
               </div>
               <DropdownMenuItem onClick={handleLogout}>

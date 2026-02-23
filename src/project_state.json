@@ -1,63 +1,65 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 5,
+  "projectStateVersion": 9,
   "summary": "Internal ticketing system with role-based access control (Superadmin/Admin/User roles) and authorization functionality",
   "architectural_notes": [
     "access-control.mo uses UserRole enum with #superadmin, #admin, #user variants",
     "isAdmin function allows both #superadmin and #admin roles to pass authorization checks",
-    "Superadmin role bypass mechanism implemented for assignRole function"
+    "Superadmin role bypass mechanism implemented for assignRole function",
+    "User management page statistics cards calculate counts based on status filter from fetched user list",
+    "getAllUsers() query function added to backend for fetching all user data with admin authorization",
+    "Frontend correctly uses 'in' operator to check Motoko variants (e.g., 'active' in u.status) since they become objects like { active: null } in JavaScript"
   ],
-  "known_issues": [
-    "Claim superadmin fails with 'Unauthorized: Only admins can assign user roles' error because access-control.mo doesn't recognize #superadmin role variant"
-  ],
+  "known_issues": [],
   "isFixRequest": true,
-  "existing_features": [],
-  "new_feature_requests": [
+  "existing_features": [
     {
-      "id": "AR-1",
-      "summary": "Update the UserRole enum in backend/access-control.mo to include #superadmin variant alongside existing role variants",
+      "id": "feature-fix-the-status-filter-in-usermanagementpage-to-correctly-query-active-users-from-the-backend-using-the-lowercase-variant-format-active",
+      "title": "Fix the status filter in UserManagementPage to correctly query active users from the backend using the lowercase variant format (#active)",
       "reqIds": [
         "REQ-1"
       ],
-      "status": "pending"
+      "version": 1
     },
     {
-      "id": "AR-2",
-      "summary": "Modify the isAdmin function in backend/access-control.mo to return true when the user role is either #admin or #superadmin, using pattern: let role = getUserRole(state, caller); return role == #admin or role == #superadmin;",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Implement state synchronization mechanism in backend to ensure Superadmin Principal is correctly assigned #superadmin role in AccessControlState, either through a dedicated force-update function or by bypassing isAdmin check in assignRole when caller is Superadmin from the main.mo role system",
+      "id": "feature-fix-the-active-users-statistics-card-calculation-in-usermanagementpage-to-correctly-count-and-display-the-number-of-active-users",
+      "title": "Fix the Active Users statistics card calculation in UserManagementPage to correctly count and display the number of active users",
       "reqIds": [
         "REQ-3"
       ],
-      "status": "pending"
+      "version": 1
     },
     {
-      "id": "AR-4",
-      "summary": "Update the UserRole enum in backend/access-control.mo to include the #superadmin variant alongside existing role variants (#admin, #user)",
+      "id": "feature-ensure-the-user-list-table-in-usermanagementpage-correctly-filters-and-displays-active-users-with-their-status-badges",
+      "title": "Ensure the user list table in UserManagementPage correctly filters and displays active users with their status badges",
       "reqIds": [
         "REQ-4"
       ],
-      "status": "pending"
+      "version": 1
     },
     {
-      "id": "AR-5",
-      "summary": "Modify the isAdmin function in backend/access-control.mo to return true when the user role is either #admin or #superadmin, using the pattern: let role = getUserRole(state, caller); return role == #admin or role == #superadmin;",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Ensure the Superadmin principal is automatically assigned the #superadmin role in AccessControlState when claiming superadmin privileges in main.mo (around line 365-367), either by calling AccessControl.assignRole with #superadmin after setting role = #superadmin and status = #active, or by implementing a bypass mechanism in access-control.mo that skips the isAdmin check when the caller already has #superadmin role in the main user system",
+      "id": "feature-update-usermanagementpage-tsx-to-fetch-combinedusers-data-from-backendactor-getallusers-instead-of-the-current-data-source",
+      "title": "Update UserManagementPage.tsx to fetch combinedUsers data from backendActor.getAllUsers() instead of the current data source.",
       "reqIds": [
         "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-status-and-role-filtering-logic-in-usermanagementpage-tsx-to-correctly-handle-motoko-variants-which-become-javascript-objects-like-active-null-or-pending-null-replace-all-comparisons-with-in-operator-checks-for-pending-users-filter-using-pending-in-u-status-for-internal-active-users-filter-using-active-in-u-status-superadmin-in-u-role-admin-in-u-role-finance-in-u-role-concierge-in-u-role-asistenmu-in-u-role-for-partner-active-users-filter-using-active-in-u-status-partner-in-u-role-strategicpartner-in-u-role-for-client-active-users-filter-using-active-in-u-status-client-in-u-role",
+      "title": "Fix the status and role filtering logic in UserManagementPage.tsx to correctly handle Motoko variants which become JavaScript objects like { active: null } or { pending: null }. Replace all === comparisons with 'in' operator checks. For Pending users: filter using 'pending' in u.status. For Internal Active users: filter using 'active' in u.status && ('superadmin' in u.role || 'admin' in u.role || 'finance' in u.role || 'concierge' in u.role || 'asistenmu' in u.role). For Partner Active users: filter using 'active' in u.status && ('partner' in u.role || 'strategicPartner' in u.role). For Client Active users: filter using 'active' in u.status && 'client' in u.role.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Add a new query function getAllUsers() to backend/main.mo that returns all users from the users map as an array. The function must include authorization check using isAuthorizedAdmin(caller) and trap with 'Unauthorized: Only Admins can view all users' if caller is not authorized. Use Iter.toArray(users.vals()) to convert the map values to an array.",
+      "reqIds": [
+        "REQ-5"
       ],
       "status": "pending"
     }
