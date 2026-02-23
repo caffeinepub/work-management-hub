@@ -1,78 +1,73 @@
 {
   "kind": "build_request",
-  "title": "Fix user approval synchronization and backend role assignment",
-  "projectName": "Work Management Hub",
+  "title": "Fix superadmin claim authorization by adding superadmin role to access-control",
+  "projectName": "Asistenku Internal System",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "In UserManagementPage.tsx, ensure the 'User Pending' card displays data directly from actor.listApprovals() without manual status filtering. Remove any filter logic that checks u.status === Status.pending if the data from listApprovals() does not include a status field.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "Buka `UserManagementPage.tsx`. Jangan lakukan filter manual `u.status === Status.pending` jika data dari `listApprovals()` tidak memiliki field status tersebut."
-        ]
-      },
-      "acceptanceCriteria": [
-        "The 'User Pending' card in UserManagementPage.tsx displays the same pending user data visible in the main Dashboard",
-        "No manual status filtering is applied if listApprovals() data lacks status field",
-        "Pending user count matches between Dashboard and User Management page"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Update the approveUser(principalId: Principal) function in backend/main.mo to: 1) Find the user profile by Principal, 2) Extract the requestedRole value from the profile, 3) Update the user status to #active, 4) Assign the user's role to match their requestedRole (e.g., change from #pending to #client or #asistenmu), 5) Allow users with Superadmin role to execute this function.",
+      "id": "REQ-4",
+      "text": "Update the UserRole enum in backend/access-control.mo to include the #superadmin variant alongside existing role variants (#admin, #user)",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-latest"
         ],
         "quotes": [
-          "Update fungsi `approveUser(principalId: Principal)` di backend",
-          "Ambil nilai `requestedRole` dari profilnya",
-          "Update status user menjadi #active",
-          "Pindahkan/Set role user tersebut menjadi role yang sesuai dengan `requestedRole` tadi"
+          "Saya mengalami stuck dalam mengclaim superadmin karena unauthorized. Only admin can asssign role."
         ]
       },
       "acceptanceCriteria": [
-        "approveUser successfully retrieves requestedRole from user profile",
-        "User status changes to #active after approval",
-        "User role is updated to match their requestedRole value",
-        "Superadmin role can execute approveUser function",
-        "Approve button responds and processes user approvals correctly"
+        "The UserRole type in access-control.mo includes #superadmin as a valid variant",
+        "The enum definition matches the pattern: type UserRole = { #admin; #superadmin; #user; }"
       ]
     },
     {
-      "id": "REQ-3",
-      "text": "In UserManagementTable.tsx, after a successful await actor.approveUser call, trigger refetch() or invalidateQueries for query keys ['allUsers'] and ['approvals'] to automatically refresh the data and move the approved user from the pending card to the appropriate role card.",
-      "target": "frontend",
+      "id": "REQ-5",
+      "text": "Modify the isAdmin function in backend/access-control.mo to return true when the user role is either #admin or #superadmin, using the pattern: let role = getUserRole(state, caller); return role == #admin or role == #superadmin;",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-latest"
         ],
         "quotes": [
-          "Di `UserManagementTable.tsx`, pastikan setelah `await actor.approveUser`, panggil `refetch()` atau `invalidateQueries` untuk key `['allUsers']` dan `['approvals']`"
+          "Only admin can asssign role"
         ]
       },
       "acceptanceCriteria": [
-        "After approving a user, both ['allUsers'] and ['approvals'] queries are invalidated",
-        "Approved users immediately disappear from the pending card",
-        "Approved users appear in the correct role category card without manual page refresh"
+        "The isAdmin function returns true for principals with #admin role",
+        "The isAdmin function returns true for principals with #superadmin role",
+        "The isAdmin function returns false for principals with #user role or no role",
+        "The implementation uses boolean OR logic to check both role conditions"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Ensure the Superadmin principal is automatically assigned the #superadmin role in AccessControlState when claiming superadmin privileges in main.mo (around line 365-367), either by calling AccessControl.assignRole with #superadmin after setting role = #superadmin and status = #active, or by implementing a bypass mechanism in access-control.mo that skips the isAdmin check when the caller already has #superadmin role in the main user system",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When a user successfully claims superadmin privileges via main.mo, they are automatically registered with #superadmin role in the access-control state",
+        "The first superadmin claim completes without triggering 'Unauthorized: Only admins can assign user roles' error",
+        "Subsequent role assignments by the superadmin work correctly",
+        "The solution maintains consistency between the main.mo user role system and the access-control.mo authorization system"
       ]
     }
   ],
   "constraints": [
-    "Maintain single-actor architecture in backend/main.mo",
-    "Do not modify Internet Identity hooks or authentication flow",
-    "Preserve existing user data structure and migration compatibility"
+    "Maintain the single-actor architecture with all Motoko logic in backend/main.mo",
+    "Preserve existing access-control.mo API and function signatures where possible",
+    "Do not modify the existing user role structure in main.mo (#superadmin, #admin, #finance, #concierge, #strategicPartner, #asistenmu, #client, #partner)",
+    "Ensure backward compatibility with existing users who already have roles assigned"
   ],
   "nonGoals": [
-    "Changing the overall role system or adding new roles",
-    "Modifying the UI design or layout of the User Management page",
-    "Implementing additional approval workflow features beyond fixing the current synchronization issue"
+    "Adding new user roles beyond #superadmin to access-control.mo",
+    "Changing the frontend authentication or registration flows",
+    "Modifying the Internet Identity integration",
+    "Implementing additional access control features beyond fixing the superadmin claim issue"
   ],
   "imageRequirements": {
     "required": [],
