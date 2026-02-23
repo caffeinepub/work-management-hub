@@ -1,6 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Superadmin authorization in user role assignment helper functions - Frontend Plan",
+  "title": "Fix access-control.mo to recognize Superadmin role (Frontend Plan)",
   "requirements": []
 }

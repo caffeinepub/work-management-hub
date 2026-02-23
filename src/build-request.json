@@ -1,74 +1,72 @@
 {
   "kind": "build_request",
-  "title": "Fix Superadmin authorization in user role assignment helper functions",
-  "projectName": "Work Management Hub",
+  "title": "Fix access-control.mo to recognize Superadmin role",
+  "projectName": "Asistenmu Platform",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Locate the helper function in backend/main.mo that validates authorization for assigning user roles (likely `assignUserRole`, `assignCallerUserRole`, or similar) which currently throws the error message 'Only admins can assign user roles'",
+      "text": "Update the UserRole enum in backend/access-control.mo to include #superadmin variant alongside existing role variants",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-8"
+          "msg-4"
         ],
         "quotes": [
-          "Cari fungsi yang bertugas menetapkan role user (misalnya `assignUserRole` atau yang memunculkan pesan error \"Only admins can assign user roles\")"
+          "UPDATE ENUM ROLE (Baris ~7): Tambahkan `#superadmin` ke dalam `public type UserRole`."
         ]
       },
       "acceptanceCriteria": [
-        "The specific helper function responsible for role assignment authorization is identified",
-        "The function currently restricts access to only 'admin' role"
+        "UserRole type definition includes #superadmin variant",
+        "Enum structure remains compatible with existing role system"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update the authorization logic in the role assignment helper function to allow callers with either 'superadmin' OR 'admin' role (case-insensitive comparison with lowercase string values)",
+      "text": "Modify the isAdmin function in backend/access-control.mo to return true when the user role is either #admin or #superadmin, using pattern: let role = getUserRole(state, caller); return role == #admin or role == #superadmin;",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-8"
+          "msg-4"
         ],
         "quotes": [
-          "Ubah logika pengecekan otorisasinya agar fungsi tersebut MENGIZINKAN pemanggil dengan role \"Superadmin\" ATAU \"Admin\""
+          "UPDATE LOGIKA ISADMIN (Baris ~62): Ubah fungsi `isAdmin(state, caller)` agar MENGIZINKAN `#superadmin`. Contoh: `let role = getUserRole(state, caller);` `return role == #admin or role == #superadmin;`"
         ]
       },
       "acceptanceCriteria": [
-        "The helper function's authorization check accepts both 'admin' and 'superadmin' roles",
-        "Role comparison uses lowercase string matching to handle backend storage format",
-        "The error 'Unauthorized: Only admins can assign user roles' is no longer thrown for Superadmin callers"
+        "isAdmin function returns true for users with #superadmin role",
+        "isAdmin function returns true for users with #admin role",
+        "Function logic uses getUserRole to retrieve current role"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Audit all other helper functions related to the user approval/rejection workflow in backend/main.mo to ensure none are exclusively restricted to 'admin' role when they should also allow 'superadmin'",
+      "text": "Implement state synchronization mechanism in backend to ensure Superadmin Principal is correctly assigned #superadmin role in AccessControlState, either through a dedicated force-update function or by bypassing isAdmin check in assignRole when caller is Superadmin from the main.mo role system",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-8"
+          "msg-4"
         ],
         "quotes": [
-          "Pastikan tidak ada lagi fungsi helper terkait proses Approve/Reject yang masih eksklusif untuk Admin saja"
+          "SINKRONISASI DATA (Penting): Karena akun saya saat ini mungkin sudah terlanjur terekam sebagai `#user` di `AccessControlState`, tolong buatkan fungsi khusus (sementara) di backend atau update logika saat inisialisasi agar Principal saya (Superadmin) di-force update role-nya menjadi `#superadmin` atau `#admin` di dalam state `access-control` tersebut. Atau, bypass saja pengecekan `isAdmin` di `assignRole` jika pemanggilnya adalah Superadmin dari sistem role utama di `main.mo`."
         ]
       },
       "acceptanceCriteria": [
-        "All helper functions called during user approval flow allow both 'admin' and 'superadmin' roles",
-        "All helper functions called during user rejection flow allow both 'admin' and 'superadmin' roles",
-        "No authorization errors occur when Superadmin performs approval or rejection actions"
+        "Superadmin Principal from main.mo role system can successfully call assignRole without trap",
+        "State synchronization ensures Superadmin role is properly recognized in access-control module",
+        "Solution handles existing state where Superadmin may be incorrectly recorded as #user"
       ]
     }
   ],
   "constraints": [
-    "Only modify backend Motoko code in backend/main.mo",
-    "Do not change the frontend code",
-    "Maintain case-insensitive role comparison using lowercase string values as stored in backend",
-    "Preserve existing authorization logic for other roles and operations"
+    "Maintain compatibility with existing role system in main.mo that defines 8 user roles (superadmin, admin, finance, concierge, strategicPartner, asistenmu, client, partner)",
+    "Preserve existing authorization logic for other roles",
+    "Do not break existing admin approval workflow"
   ],
   "nonGoals": [
-    "Adding new roles or permissions",
-    "Changing the user interface",
-    "Modifying the approval workflow logic beyond authorization fixes",
-    "Restructuring the backend architecture"
+    "Modifying the main.mo role system structure",
+    "Changing frontend role badge components",
+    "Altering user registration or approval flows beyond authorization fix"
   ],
   "imageRequirements": {
     "required": [],

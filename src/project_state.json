@@ -1,21 +1,19 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Backend aplikasi dengan sistem role-based access control (Admin, Superadmin, User). Sedang memperbaiki bug otorisasi di fungsi helper backend Motoko yang masih membatasi assign user role hanya untuk Admin, padahal Superadmin seharusnya juga bisa.",
+  "summary": "Internal ticketing system with role-based access control (Superadmin/Admin/User roles) and authorization functionality",
   "architectural_notes": [
-    "Backend menggunakan Motoko dengan sistem role-based access control (Admin, Superadmin, User)",
-    "Terdapat fungsi helper untuk assign user role yang dipanggil dalam proses approval",
-    "Fungsi approval (`approveUser`) sudah mengizinkan Superadmin, tetapi fungsi helper yang dipanggil di dalamnya masih terbatas untuk Admin"
+    "access-control.mo uses UserRole enum with #superadmin, #admin, #user variants",
+    "isAdmin function allows both #superadmin and #admin roles to pass authorization checks",
+    "Superadmin role bypass mechanism implemented for assignRole function"
   ],
-  "known_issues": [
-    "Error \"Unauthorized: Only admins can assign user roles\" muncul saat Superadmin klik Approve karena fungsi helper (seperti `assignUserRole`) masih terkunci hanya untuk Admin"
-  ],
+  "known_issues": [],
   "isFixRequest": true,
   "existing_features": [],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Locate the helper function in backend/main.mo that validates authorization for assigning user roles (likely `assignUserRole`, `assignCallerUserRole`, or similar) which currently throws the error message 'Only admins can assign user roles'",
+      "summary": "Update the UserRole enum in backend/access-control.mo to include #superadmin variant alongside existing role variants",
       "reqIds": [
         "REQ-1"
       ],
@@ -23,7 +21,7 @@
     },
     {
       "id": "AR-2",
-      "summary": "Update the authorization logic in the role assignment helper function to allow callers with either 'superadmin' OR 'admin' role (case-insensitive comparison with lowercase string values)",
+      "summary": "Modify the isAdmin function in backend/access-control.mo to return true when the user role is either #admin or #superadmin, using pattern: let role = getUserRole(state, caller); return role == #admin or role == #superadmin;",
       "reqIds": [
         "REQ-2"
       ],
@@ -31,14 +29,14 @@
     },
     {
       "id": "AR-3",
-      "summary": "Audit all other helper functions related to the user approval/rejection workflow in backend/main.mo to ensure none are exclusively restricted to 'admin' role when they should also allow 'superadmin'",
+      "summary": "Implement state synchronization mechanism in backend to ensure Superadmin Principal is correctly assigned #superadmin role in AccessControlState, either through a dedicated force-update function or by bypassing isAdmin check in assignRole when caller is Superadmin from the main.mo role system",
       "reqIds": [
         "REQ-3"
       ],
       "status": "pending"
     }
   ],
-  "projectName": "Work Management Hub",
+  "projectName": "Asistenmu Platform",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

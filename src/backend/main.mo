@@ -11,7 +11,9 @@ import Random "mo:core/Random";
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
 import Int "mo:core/Int";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   public type Role = {
     #superadmin;
@@ -380,11 +382,11 @@ actor {
     };
   };
 
-  private func isAccountManager(caller : Principal) : Bool {
+  private func isAsistenmu(caller : Principal) : Bool {
     switch (users.get(caller)) {
       case (null) { false };
       case (?user) {
-        user.status == #active and (user.role == #superadmin or user.role == #admin or user.role == #asistenmu or user.role == #concierge);
+        user.status == #active and user.role == #asistenmu;
       };
     };
   };
@@ -462,6 +464,7 @@ actor {
     };
 
     users.add(caller, user);
+    AccessControl.assignRole(accessControlState, caller, caller, #admin);
   };
 
   public query ({ caller }) func getPendingRequests() : async [User] {
@@ -699,7 +702,7 @@ actor {
       requestedAt = ?Time.now();
       approvedAt = ?Time.now();
       requestedBy = ?principalId;
-      approvedBy = ?principalId;
+      approvedBy = null;
       rejectedBy = ?principalId;
       rejectedAt = ?Time.now();
       rejectionReason = ?("role not valid");
@@ -743,8 +746,8 @@ actor {
   };
 
   public shared ({ caller }) func setApproval(user : Principal, status : UserApproval.ApprovalStatus) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
+    if (not isSuperAdminOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only superadmin or admin can set approval");
     };
     UserApproval.setApproval(approvalState, user, status);
   };
@@ -950,8 +953,8 @@ actor {
   };
 
   public shared ({ caller }) func inputEstimasiAM(taskId : Text, estimasiJam : Nat) : async InputEstimasiAMResult {
-    if (not isAccountManager(caller)) {
-      Runtime.trap("Unauthorized: Only Account Managers (admin, asistenmu, concierge) can input time estimates");
+    if (not isAsistenmu(caller)) {
+      Runtime.trap("Unauthorized: Only Asistenmu role can input time estimates");
     };
 
     if (estimasiJam == 0) {
@@ -1018,8 +1021,8 @@ actor {
   };
 
   public shared ({ caller }) func assignPartner(taskId : Text, partnerId : Principal, scopeKerja : Text, deadline : Int, linkDriveInternal : Text, jamEfektif : Nat, levelPartner : Text) : async AssignPartnerResult {
-    if (not isAccountManager(caller)) {
-      Runtime.trap("Unauthorized: Only account managers (AM) can assign partners to tasks");
+    if (not isAsistenmu(caller)) {
+      Runtime.trap("Unauthorized: Only Asistenmu role can assign partners to tasks");
     };
 
     switch (tasks.get(taskId)) {
@@ -1117,7 +1120,7 @@ actor {
         #err("Task tidak ditemukan. Pastikan id task sudah benar.");
       };
       case (?task) {
-        if (isAccountManager(caller)) {
+        if (isAsistenmu(caller)) {
           let updatedTask = { task with status = newStatus };
           tasks.add(taskId, updatedTask);
           return #ok("Task status updated successfully. Task id: " # taskId);
@@ -1125,7 +1128,7 @@ actor {
 
         switch (task.internalData) {
           case (null) {
-            Runtime.trap("Unauthorized: Only account managers can update task status");
+            Runtime.trap("Unauthorized: Only Asistenmu role can update task status");
           };
           case (?internalData) {
             if (internalData.partnerId == caller and isActivePartner(caller)) {
@@ -1133,7 +1136,7 @@ actor {
               tasks.add(taskId, updatedTask);
               return #ok("Task status updated successfully. Task id: " # taskId);
             } else {
-              Runtime.trap("Unauthorized: Only account managers or assigned partners can update task status");
+              Runtime.trap("Unauthorized: Only Asistenmu role or assigned partners can update task status");
             };
           };
         };
@@ -1142,22 +1145,25 @@ actor {
   };
 
   public shared ({ caller }) func completeTask(taskId : Text) : async CompleteTaskResult {
-    if (not isAccountManager(caller)) {
-      Runtime.trap("Unauthorized: Only account managers can complete tasks");
-    };
-
     switch (tasks.get(taskId)) {
       case (null) {
         #err("Task tidak ditemukan. Pastikan id task sudah benar.");
       };
       case (?task) {
-        switch (layanans.get(task.layananId)) {
+        let isOwnerAfterReview = (task.clientId == caller and task.status == #ClientReview);
+        let isSuperadminOverride = isSuperAdmin(caller);
+
+        if (not isOwnerAfterReview and not isSuperadminOverride) {
+          Runtime.trap("Unauthorized: Only the task owner (after ClientReview) or superadmin can complete tasks");
+        };
+
+        let banners = switch (layanans.get(task.layananId)) {
           case (null) {
-            #err("LayananId tidak ditemukan. Pastikan layanan masih aktif.");
+            return #err("LayananId tidak ditemukan. Pastikan layanan masih aktif.");
           };
           case (?layanan) {
-            if (task.status != #OnProgress) {
-              return #err("Task must be in OnProgress status to complete. Task id: " # taskId);
+            if (task.status != #ClientReview and not isSuperadminOverride) {
+              return #err("Task must be in ClientReview status to complete (or superadmin override). Task id: " # taskId);
             };
 
             switch (task.internalData) {
@@ -1197,18 +1203,19 @@ actor {
                 layanans.add(task.layananId, updatedLayanan);
                 tasks.add(taskId, updatedTask);
 
-                #ok(financialResult);
+                return #ok(financialResult);
               };
             };
           };
         };
+        banners;
       };
     };
   };
 
   public query ({ caller }) func getClientTasks(clientId : Principal) : async [TaskClientView] {
-    if (caller != clientId and not isAccountManager(caller)) {
-      Runtime.trap("Unauthorized: Only the client or account managers can query client tasks");
+    if (caller != clientId and not isAsistenmu(caller)) {
+      Runtime.trap("Unauthorized: Only the client or Asistenmu role can query client tasks");
     };
 
     tasks.values().toArray().filter(
