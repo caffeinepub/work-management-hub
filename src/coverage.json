@@ -1,48 +1,54 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-23T01:40:37.542Z",
+  "generatedAt": "2026-02-22T21:27:47.356Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 3,
-    "implemented": 0,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the UserRole enum in backend/access-control.mo to include #superadmin variant alongside existing role variants",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "In UserManagementPage.tsx, ensure the 'User Pending' card displays data directly from actor.listApprovals() without manual status filtering. Remove any filter logic that checks u.status === Status.pending if the data from listApprovals() does not include a status field.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/UserManagementPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/UserManagementPage.tsx"
+        ]
       },
       {
         "id": "REQ-2",
-        "summary": "Modify the isAdmin function in backend/access-control.mo to return true when the user role is either #admin or #superadmin, using pattern: let role = getUserRole(state, caller); return role == #admin or role == #superadmin;",
+        "summary": "Update the approveUser(principalId: Principal) function in backend/main.mo to: 1) Find the user profile by Principal, 2) Extract the requestedRole value from the profile, 3) Update the user status to #active, 4) Assign the user's role to match their requestedRole (e.g., change from #pending to #client or #asistenmu), 5) Allow users with Superadmin role to execute this function.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Implement state synchronization mechanism in backend to ensure Superadmin Principal is correctly assigned #superadmin role in AccessControlState, either through a dedicated force-update function or by bypassing isAdmin check in assignRole when caller is Superadmin from the main.mo role system",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "In UserManagementTable.tsx, after a successful await actor.approveUser call, trigger refetch() or invalidateQueries for query keys ['allUsers'] and ['approvals'] to automatically refresh the data and move the approved user from the pending card to the appropriate role card.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/UserManagementTable.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/UserManagementTable.tsx"
+        ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
+    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
+    "frontend/src/components/UserManagementPage.tsx",
+    "frontend/src/components/UserManagementTable.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

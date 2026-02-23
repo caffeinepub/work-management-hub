@@ -1,72 +1,78 @@
 {
   "kind": "build_request",
-  "title": "Fix access-control.mo to recognize Superadmin role",
-  "projectName": "Asistenmu Platform",
+  "title": "Fix user approval synchronization and backend role assignment",
+  "projectName": "Work Management Hub",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the UserRole enum in backend/access-control.mo to include #superadmin variant alongside existing role variants",
-      "target": "backend",
+      "text": "In UserManagementPage.tsx, ensure the 'User Pending' card displays data directly from actor.listApprovals() without manual status filtering. Remove any filter logic that checks u.status === Status.pending if the data from listApprovals() does not include a status field.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-5"
         ],
         "quotes": [
-          "UPDATE ENUM ROLE (Baris ~7): Tambahkan `#superadmin` ke dalam `public type UserRole`."
+          "Buka `UserManagementPage.tsx`. Jangan lakukan filter manual `u.status === Status.pending` jika data dari `listApprovals()` tidak memiliki field status tersebut."
         ]
       },
       "acceptanceCriteria": [
-        "UserRole type definition includes #superadmin variant",
-        "Enum structure remains compatible with existing role system"
+        "The 'User Pending' card in UserManagementPage.tsx displays the same pending user data visible in the main Dashboard",
+        "No manual status filtering is applied if listApprovals() data lacks status field",
+        "Pending user count matches between Dashboard and User Management page"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Modify the isAdmin function in backend/access-control.mo to return true when the user role is either #admin or #superadmin, using pattern: let role = getUserRole(state, caller); return role == #admin or role == #superadmin;",
+      "text": "Update the approveUser(principalId: Principal) function in backend/main.mo to: 1) Find the user profile by Principal, 2) Extract the requestedRole value from the profile, 3) Update the user status to #active, 4) Assign the user's role to match their requestedRole (e.g., change from #pending to #client or #asistenmu), 5) Allow users with Superadmin role to execute this function.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-5"
         ],
         "quotes": [
-          "UPDATE LOGIKA ISADMIN (Baris ~62): Ubah fungsi `isAdmin(state, caller)` agar MENGIZINKAN `#superadmin`. Contoh: `let role = getUserRole(state, caller);` `return role == #admin or role == #superadmin;`"
+          "Update fungsi `approveUser(principalId: Principal)` di backend",
+          "Ambil nilai `requestedRole` dari profilnya",
+          "Update status user menjadi #active",
+          "Pindahkan/Set role user tersebut menjadi role yang sesuai dengan `requestedRole` tadi"
         ]
       },
       "acceptanceCriteria": [
-        "isAdmin function returns true for users with #superadmin role",
-        "isAdmin function returns true for users with #admin role",
-        "Function logic uses getUserRole to retrieve current role"
+        "approveUser successfully retrieves requestedRole from user profile",
+        "User status changes to #active after approval",
+        "User role is updated to match their requestedRole value",
+        "Superadmin role can execute approveUser function",
+        "Approve button responds and processes user approvals correctly"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Implement state synchronization mechanism in backend to ensure Superadmin Principal is correctly assigned #superadmin role in AccessControlState, either through a dedicated force-update function or by bypassing isAdmin check in assignRole when caller is Superadmin from the main.mo role system",
-      "target": "backend",
+      "text": "In UserManagementTable.tsx, after a successful await actor.approveUser call, trigger refetch() or invalidateQueries for query keys ['allUsers'] and ['approvals'] to automatically refresh the data and move the approved user from the pending card to the appropriate role card.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-5"
         ],
         "quotes": [
-          "SINKRONISASI DATA (Penting): Karena akun saya saat ini mungkin sudah terlanjur terekam sebagai `#user` di `AccessControlState`, tolong buatkan fungsi khusus (sementara) di backend atau update logika saat inisialisasi agar Principal saya (Superadmin) di-force update role-nya menjadi `#superadmin` atau `#admin` di dalam state `access-control` tersebut. Atau, bypass saja pengecekan `isAdmin` di `assignRole` jika pemanggilnya adalah Superadmin dari sistem role utama di `main.mo`."
+          "Di `UserManagementTable.tsx`, pastikan setelah `await actor.approveUser`, panggil `refetch()` atau `invalidateQueries` untuk key `['allUsers']` dan `['approvals']`"
         ]
       },
       "acceptanceCriteria": [
-        "Superadmin Principal from main.mo role system can successfully call assignRole without trap",
-        "State synchronization ensures Superadmin role is properly recognized in access-control module",
-        "Solution handles existing state where Superadmin may be incorrectly recorded as #user"
+        "After approving a user, both ['allUsers'] and ['approvals'] queries are invalidated",
+        "Approved users immediately disappear from the pending card",
+        "Approved users appear in the correct role category card without manual page refresh"
       ]
     }
   ],
   "constraints": [
-    "Maintain compatibility with existing role system in main.mo that defines 8 user roles (superadmin, admin, finance, concierge, strategicPartner, asistenmu, client, partner)",
-    "Preserve existing authorization logic for other roles",
-    "Do not break existing admin approval workflow"
+    "Maintain single-actor architecture in backend/main.mo",
+    "Do not modify Internet Identity hooks or authentication flow",
+    "Preserve existing user data structure and migration compatibility"
   ],
   "nonGoals": [
-    "Modifying the main.mo role system structure",
-    "Changing frontend role badge components",
-    "Altering user registration or approval flows beyond authorization fix"
+    "Changing the overall role system or adding new roles",
+    "Modifying the UI design or layout of the User Management page",
+    "Implementing additional approval workflow features beyond fixing the current synchronization issue"
   ],
   "imageRequirements": {
     "required": [],

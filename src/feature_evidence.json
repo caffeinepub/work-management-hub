@@ -1,4 +1,45 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-in-usermanagementpage-tsx-ensure-the-user-pending-card-displays-data-directly-from-actor-listapprovals-without-manual-status-filtering-remove-any-filter-logic-that-checks-u-status-status-pending-if-the-data-from-listapprovals-does-not-include-a-status-field",
+      "featureTitle": "In UserManagementPage.tsx, ensure the 'User Pending' card displays data directly from actor.listApprovals() without manual status filtering. Remove any filter logic that checks u.status === Status.pending if the data from listApprovals() does not include a status field.",
+      "files": [
+        "frontend/src/components/UserManagementPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "user-approval@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-usermanagementtable-tsx-after-a-successful-await-actor-approveuser-call-trigger-refetch-or-invalidatequeries-for-query-keys-allusers-and-approvals-to-automatically-refresh-the-data-and-move-the-approved-user-from-the-pending-card-to-the-appropriate-role-card",
+      "featureTitle": "In UserManagementTable.tsx, after a successful await actor.approveUser call, trigger refetch() or invalidateQueries for query keys ['allUsers'] and ['approvals'] to automatically refresh the data and move the approved user from the pending card to the appropriate role card.",
+      "files": [
+        "frontend/src/components/UserManagementTable.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "user-approval@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

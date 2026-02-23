@@ -1,42 +1,43 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Internal ticketing system with role-based access control (Superadmin/Admin/User roles) and authorization functionality",
-  "architectural_notes": [
-    "access-control.mo uses UserRole enum with #superadmin, #admin, #user variants",
-    "isAdmin function allows both #superadmin and #admin roles to pass authorization checks",
-    "Superadmin role bypass mechanism implemented for assignRole function"
+  "summary": "New project",
+  "architectural_notes": [],
+  "known_issues": [
+    "Data synchronization issue between Dashboard and User Management page - pending users show on dashboard but not in management table",
+    "Approve button not functioning - backend approveUser function needs to properly handle role assignment from requestedRole field",
+    "Missing auto-refresh after user approval - need to invalidate queries for ['allUsers'] and ['approvals']"
   ],
-  "known_issues": [],
   "isFixRequest": true,
-  "existing_features": [],
-  "new_feature_requests": [
+  "existing_features": [
     {
-      "id": "AR-1",
-      "summary": "Update the UserRole enum in backend/access-control.mo to include #superadmin variant alongside existing role variants",
+      "id": "feature-in-usermanagementpage-tsx-ensure-the-user-pending-card-displays-data-directly-from-actor-listapprovals-without-manual-status-filtering-remove-any-filter-logic-that-checks-u-status-status-pending-if-the-data-from-listapprovals-does-not-include-a-status-field",
+      "title": "In UserManagementPage.tsx, ensure the 'User Pending' card displays data directly from actor.listApprovals() without manual status filtering. Remove any filter logic that checks u.status === Status.pending if the data from listApprovals() does not include a status field.",
       "reqIds": [
         "REQ-1"
       ],
-      "status": "pending"
+      "version": 1
     },
     {
+      "id": "feature-in-usermanagementtable-tsx-after-a-successful-await-actor-approveuser-call-trigger-refetch-or-invalidatequeries-for-query-keys-allusers-and-approvals-to-automatically-refresh-the-data-and-move-the-approved-user-from-the-pending-card-to-the-appropriate-role-card",
+      "title": "In UserManagementTable.tsx, after a successful await actor.approveUser call, trigger refetch() or invalidateQueries for query keys ['allUsers'] and ['approvals'] to automatically refresh the data and move the approved user from the pending card to the appropriate role card.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
       "id": "AR-2",
-      "summary": "Modify the isAdmin function in backend/access-control.mo to return true when the user role is either #admin or #superadmin, using pattern: let role = getUserRole(state, caller); return role == #admin or role == #superadmin;",
+      "summary": "Update the approveUser(principalId: Principal) function in backend/main.mo to: 1) Find the user profile by Principal, 2) Extract the requestedRole value from the profile, 3) Update the user status to #active, 4) Assign the user's role to match their requestedRole (e.g., change from #pending to #client or #asistenmu), 5) Allow users with Superadmin role to execute this function.",
       "reqIds": [
         "REQ-2"
       ],
       "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Implement state synchronization mechanism in backend to ensure Superadmin Principal is correctly assigned #superadmin role in AccessControlState, either through a dedicated force-update function or by bypassing isAdmin check in assignRole when caller is Superadmin from the main.mo role system",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "status": "pending"
     }
   ],
-  "projectName": "Asistenmu Platform",
+  "projectName": "Work Management Hub",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

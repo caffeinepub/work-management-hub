@@ -1,6 +1,39 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix access-control.mo to recognize Superadmin role (Frontend Plan)",
-  "requirements": []
+  "title": "Fix user approval synchronization and backend role assignment",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Display pending users directly from listApprovals() without manual status filtering",
+      "acceptanceCriteria": [
+        "The 'User Pending' card in UserManagementPage.tsx displays the same pending user data visible in the main Dashboard",
+        "No manual status filtering is applied if listApprovals() data lacks status field",
+        "Pending user count matches between Dashboard and User Management page"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/UserManagementPage.tsx",
+          "operation": "modify",
+          "description": "Remove the manual filter logic that checks u.status === Status.pending when displaying users in the 'User Pending' card. Use the data from listApprovals() directly, as it already returns only pending users. Update the pendingUsers computation to not apply additional status filtering if the approval data structure does not include a status field."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Invalidate queries after user approval to refresh data automatically",
+      "acceptanceCriteria": [
+        "After approving a user, both ['allUsers'] and ['approvals'] queries are invalidated",
+        "Approved users immediately disappear from the pending card",
+        "Approved users appear in the correct role category card without manual page refresh"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/UserManagementTable.tsx",
+          "operation": "modify",
+          "description": "After a successful await actor.approveUser() call in the approve handler, trigger queryClient.invalidateQueries for both query keys ['allUsers'] and ['approvals'] to automatically refresh the user list data. This ensures approved users immediately move from the pending card to their appropriate role category card without requiring a manual page refresh."
+        }
+      ]
+    }
+  ]
 }

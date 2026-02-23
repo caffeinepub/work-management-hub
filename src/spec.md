@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Fix access-control.mo to properly recognize and authorize Superadmin role from main.mo role system.
+**Goal:** Fix user approval synchronization between Dashboard and User Management page, and ensure backend correctly assigns roles based on requestedRole during approval.
 
 **Planned changes:**
-- Add #superadmin variant to UserRole enum in backend/access-control.mo
-- Update isAdmin function to return true for both #admin and #superadmin roles
-- Implement state synchronization to ensure Superadmin Principal is assigned #superadmin role in AccessControlState, bypassing isAdmin check when caller is Superadmin from main.mo
+- Remove manual status filtering in UserManagementPage.tsx for pending users, display data directly from actor.listApprovals()
+- Update backend approveUser function to extract requestedRole from user profile, set status to active, and assign the role to match requestedRole
+- Add query invalidation in UserManagementTable.tsx after approveUser to automatically refresh both ['allUsers'] and ['approvals'] data
 
-**User-visible outcome:** Superadmin users can successfully perform admin operations without authorization traps, particularly when assigning roles through the assignRole function.
+**User-visible outcome:** When a Superadmin approves a pending user, the user immediately moves from the "User Pending" card to the correct role category card without manual refresh, and pending counts match between Dashboard and User Management page.
